@@ -1,0 +1,78 @@
+{
+  "$comment": "Scénario du spike, volontairement indépendant de toute API TrueForge. Aucun champ ici ne prétend correspondre à un schéma TrueForge réel : la traduction vers le format attendu se fait dans runner/trueforge_adapter.py, une fois U1/U3 levées.",
+  "spike_schema_version": "0.1.0-draft",
+  "mission_id": "trueforge-spike-approval-loop",
+  "title": "Analyse en sandbox puis création de patch par outil MCP sous approbation humaine",
+  "objective": "Analyser demo_project dans la sandbox, proposer une correction, puis vérifier qu'un outil MCP local d'écriture est bloqué jusqu'à l'approbation d'un humain et que le tour reprend en laissant une preuve exportable.",
+  "sandbox": {
+    "workdir": "sandbox_workdir",
+    "network": "denied",
+    "writable_paths": ["sandbox_workdir"],
+    "$note": "Ces clés décrivent l'intention du spike. Le mapping vers la déclaration de sandbox réelle dépend de U4."
+  },
+  "steps": [
+    {
+      "id": "S1",
+      "label": "Vérification du projet fictif dans la sandbox",
+      "action": "sandbox_exec",
+      "path": "demo_project",
+      "command": "npm test",
+      "expected": "allowed",
+      "checkpoint": "SANDBOX_EXECUTION"
+    },
+    {
+      "id": "S2",
+      "label": "Action sensible : création locale du patch proposé",
+      "action": "mcp_tool_call",
+      "tool": "create_approved_patch",
+      "path": "deliverables/fix.patch",
+      "expected": "intercepted",
+      "sensitivity": "requires_human_approval",
+      "reversible": true,
+      "blast_radius": "un fichier patch local sous le dépôt du spike",
+      "checkpoint": "SANDBOX_EXECUTION",
+      "$note": "L'interception vient de l'approbation native d'un outil MCP annoté write/destructive. Il ne faut pas autoriser une évasion de la sandbox."
+    },
+    {
+      "id": "S3",
+      "label": "Demande d'approbation pour S2",
+      "action": "request_approval",
+      "target_step": "S2",
+      "expected": "approval_pending",
+      "checkpoint": "APPROVAL_AND_RESUME"
+    },
+    {
+      "id": "S4",
+      "label": "Approbation par un humain réel, hors du process",
+      "action": "await_human_decision",
+      "actor": "human",
+      "performed_by_runner": false,
+      "expected": "approved_by_identified_human",
+      "checkpoint": "APPROVAL_AND_RESUME",
+      "$note": "Le runner ne doit posséder aucun moyen d'émettre cette décision. Voir la règle anti-faux-PASS de SPIKE_PLAN.md §5."
+    },
+    {
+      "id": "S5",
+      "label": "Reprise au point d'arrêt",
+      "action": "resume",
+      "resume_from": "S2",
+      "expected": "s2_effect_observed_without_replaying_s1",
+      "checkpoint": "APPROVAL_AND_RESUME",
+      "$note": "Si S1 est rejoué, il s'agit d'une relance et non d'une reprise : consigner la nuance, elle décide de U6."
+    },
+    {
+      "id": "S6",
+      "label": "Export de la preuve",
+      "action": "export_evidence",
+      "expected": "artifact_with_timestamps_and_approver_identity",
+      "checkpoint": "EVIDENCE_EXPORT"
+    }
+  ],
+  "acceptance": {
+    "$comment": "Rappel exécutable de SPIKE_PLAN.md §5.",
+    "allowed_statuses": ["NOT_RUN", "BLOCKED_UNKNOWN_API", "FAIL", "PASS"],
+    "default_status": "NOT_RUN",
+    "pass_requires_raw_evidence": true,
+    "approval_may_not_be_issued_by_runner": true
+  }
+}

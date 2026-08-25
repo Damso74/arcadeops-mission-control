@@ -1,0 +1,38 @@
+# --- Secrets : ne jamais versionner ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets*.json
+config/trueforge.spike.json
+
+# --- Preuves d'exécution : peuvent contenir des identités d'approbateurs ---
+# Le gabarit reste versionné (négation ci-dessous), les preuves réelles non.
+evidence/*
+!evidence/.gitkeep
+!evidence/EVIDENCE_TEMPLATE.md
+!evidence/evidence-receipt.json
+!evidence/go-pivot-evidence-receipt.json
+!evidence/verifier-experiment-receipt.json
+!evidence/submission-evidence-receipt.json
+
+# --- Artefacts du scénario ---
+sandbox_workdir/
+sandbox_escape_target/
+
+# --- Divers ---
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+mcp_server/data/records.json
+
+# --- Médias de démonstration générés localement ---
+demo_assets/*.png
+demo_assets/*.wav
+demo_assets/*.webm
+
+# Runtime local TrueForge (checkout tiers et données SQLite)
+.runtime/
+.trueforge/

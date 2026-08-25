@@ -1,0 +1,15 @@
+AI agents can operate powerful tools, but access is not authority. ArcadeOps Mission Control delegates the work while keeping the final decision and the permitted scope under explicit control.
+
+TrueForge runs the model, tools, subagents, sandbox, approval checkpoint, and persistent session. This executable Authority Contract independently limits the mission to one fictional record, one field, and two allowed values.
+
+The parent reads the record through a real MCP server, then delegates exactly one read-only Verifier. The child independently inspects the same data and prepares the proposed transition. It cannot call the write tool.
+
+Next, the agent generates a fail-closed Python validator and executes it in TrueForge's Daytona sandbox. Through TrueForge's MCP bridge, that code reads and prepares the change itself, then checks the mission, target, state, allowed value, and token. A write is forbidden unless the persisted result contains the exact marker SANDBOX VALIDATION PASS.
+
+Only then does the agent attempt the write. TrueForge recognizes the MCP write annotation and pauses before execution. The human chooses Allow in the native interface. TrueForge resumes the same turn, and the server performs exactly one authorized state change.
+
+The controls fail closed. A recorded Deny left the state untouched. Human approval cannot expand the contract either: an attempted change to case one zero two was rejected as outside authority.
+
+The receipt is generated from TrueForge's persisted public APIs. It verifies the model, Verifier, Daytona sandbox, generated-code result, approval, ordering, and single write. If any proof is missing, the exporter fails.
+
+TrueForge provides the harness. ArcadeOps adds enforceable authority and verifiable evidence. Delegate the work, never unlimited authority.

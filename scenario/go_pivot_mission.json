@@ -1,0 +1,19 @@
+{
+  "mission_id": "TF-MISSION-20260824-001",
+  "name": "Governed fictional record status review",
+  "agent": "arcadeops-governed-operator-v1",
+  "objective": "Inspect fictional records and apply a justified status change only when both the AuthorityContract and a native TrueForge human approval allow it.",
+  "data_classification": "fictional_local_only",
+  "expected_tools": [
+    "inspect_records",
+    "prepare_status_change",
+    "apply_status_change",
+    "export_evidence"
+  ],
+  "acceptance": {
+    "deny_leaves_state_unchanged": true,
+    "allow_executes_one_authorized_write": true,
+    "out_of_scope_write_is_blocked": true,
+    "receipt_is_derived_from_trueforge_events": true
+  }
+}

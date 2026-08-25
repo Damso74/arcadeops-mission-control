@@ -1,0 +1,43 @@
+{
+  "mission_id": null,
+  "agent": null,
+  "runtime": "trueforge",
+  "runtime_version": "0.1.4",
+  "model_provider": null,
+  "tools_used": [],
+  "sandbox_execution": {
+    "status": "not_run",
+    "evidence": [
+      "GET /api/v1/settings/sandbox-providers -> HTTP 404"
+    ]
+  },
+  "approval": {
+    "required": true,
+    "decision": null,
+    "resumed": false
+  },
+  "deliverable": {
+    "type": "no-go-evidence-receipt",
+    "path": "evidence/evidence-receipt.json"
+  },
+  "session_persistence": {
+    "tested": false,
+    "result": "not_run"
+  },
+  "cost": {
+    "available": false,
+    "value": null
+  },
+  "public_api_observations": {
+    "health_http_status": 200,
+    "configured_model_providers_http_status": 200,
+    "configured_model_providers_count": 0,
+    "configured_sandbox_provider_http_status": 404,
+    "sessions_http_status": 200,
+    "sessions_count": 0,
+    "agents_http_status": 200,
+    "agents_count": 0
+  },
+  "verdict": "NO-GO ENVIRONNEMENTAL — aucun runtime modèle disponible",
+  "completed_at": "2026-08-24T11:29:32+02:00"
+}
