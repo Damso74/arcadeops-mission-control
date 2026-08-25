@@ -5,12 +5,15 @@ Current state: the model, MCP, approval, persistence and Verifier are verified. 
 ## Fresh clone
 
 ```powershell
+git clone https://github.com/Damso74/arcadeops-mission-control.git arcadeops-mission-control
+Set-Location arcadeops-mission-control
+
 New-Item -ItemType Directory -Force .runtime | Out-Null
 git clone https://github.com/truefoundry/trueforge.git .runtime/trueforge
 git -C .runtime/trueforge checkout d421135dcfc802e08655d12c119e18ed715db2ef
 ```
 
-The pin is TrueForge 0.1.4 used by the verified evidence. `.runtime/` is intentionally ignored and must be created on every fresh clone.
+Until PR #1 is merged, add `--branch codex/hackathon-submission --single-branch` to the first clone command. The TrueForge pin is the 0.1.4 runtime used by the verified evidence. `.runtime/` is intentionally ignored and must be created on every fresh clone.
 
 ## Local secrets
 

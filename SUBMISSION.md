@@ -28,7 +28,7 @@ All records and writes are fictional and local. No production account, personal 
 
 ## Current submission gate
 
-The MCP, approval, persistence, authority-denial, restart-recovery, and dynamic-Verifier paths are verified. The final Daytona-integrated receipt remains pending until the participant supplies a real Daytona credential and completes the human approval run. The public GitHub repository and required Qodo review trail are also pending. Do not submit this copy as final until those gates are replaced by public evidence.
+The MCP, approval, persistence, authority-denial, restart-recovery, and dynamic-Verifier paths are verified. The repository and complete [submission PR](https://github.com/Damso74/arcadeops-mission-control/pull/1) are public, and a clean network clone passes four workflow tests, ten MCP black-box tests, and the npm audit. The final Daytona-integrated receipt remains pending until the participant supplies a real Daytona credential and completes the human approval run. The initial and follow-up Qodo reviews are also pending. Do not submit this copy as final until those gates are replaced by public evidence.
 
 ## AI assistance disclosure
 

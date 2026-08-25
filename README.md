@@ -22,7 +22,8 @@ All records are fictional. No ArcadeOps production system, customer account, or 
 | Restart recovery | Verified for TrueForge and MCP state | PASS |
 | Dynamic `Verifier` subagent | Verified through persisted child-thread events and MCP calls | PASS |
 | Daytona sandbox execution with bridged MCP reads | Configuration and strict exporter prepared | **PENDING real credential and run** |
-| Public repository and Qodo review trail | Not published | **PENDING** |
+| Public repository and complete submission PR | [Repository](https://github.com/Damso74/arcadeops-mission-control) and [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1) published | PASS |
+| Qodo review trail | PR ready; Qodo installation pending | **PENDING initial and follow-up reviews** |
 | Final three-minute video | Storyboard and local draft available | **PENDING final integrated run** |
 
 The repository must not claim `SUBMISSION_ACCEPTANCE_PASS` until `runner/export_submission_receipt.py` succeeds against a real integrated session. The exporter fails closed when Daytona, sandbox execution, the Verifier, approval, or the authorized write is absent.
@@ -57,7 +58,7 @@ Prerequisites: Docker Desktop, Git, Node.js 24, Python 3.12+, one supported mode
 ### 1. Clone this project and pin TrueForge
 
 ```powershell
-git clone <PUBLIC_SUBMISSION_REPOSITORY_URL> arcadeops-mission-control
+git clone https://github.com/Damso74/arcadeops-mission-control.git arcadeops-mission-control
 Set-Location arcadeops-mission-control
 
 New-Item -ItemType Directory -Force .runtime | Out-Null
@@ -137,17 +138,16 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 ## Qodo Code Review Evidence
 
-**Gate not yet satisfied.** Before submission, replace this paragraph with:
+**Gate not yet satisfied.** The complete representative change is public in [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1). Before submission, add:
 
-- the public URL of a representative merged pull request containing the hackathon code;
 - what Qodo found and what was fixed or intentionally dismissed;
 - evidence of the follow-up Qodo review against the final code.
 
-Do not push the existing local `master` directly to a populated public default branch. The publication plan is an empty public default branch plus this complete feature branch, followed by Qodo review and a human merge.
+The public `main` branch contains only the initialization commit. PR #1 adds all 54 project files in one reviewable change and must receive Qodo's initial review, remediation, and follow-up review before a human merge.
 
 ## Publication status and disclosure
 
-The project is licensed under the [MIT License](LICENSE). It has not yet been pushed, published, merged, or submitted to the hackathon.
+The project is licensed under the [MIT License](LICENSE). The repository and complete PR are public. The PR has not yet received the required Qodo review, been merged, or been submitted to the hackathon.
 
 Claude Code assisted with the initial spike skeleton, MCP hardening, and black-box test design. OpenAI Codex assisted with implementation, runtime integration, execution, verification, correction, and documentation. Damien must review and understand the submitted code before the human merge and submission.
 
