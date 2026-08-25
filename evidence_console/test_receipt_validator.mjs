@@ -33,6 +33,9 @@ test('rejects missing authority-chain records', () => {
     'write_calls',
     'executed_writes',
     'approval_correlated_writes',
+    'verifier_tool_calls',
+    'sandbox_references',
+    'sandbox_exec_calls',
     'precondition_inspections',
     'postcondition_inspections',
   ]) {
@@ -51,4 +54,19 @@ test('rejects mismatched incident, service, version, action, and metrics', () =>
   rejects(receipt => { receipt.target_version = 'v999'; }, /target version|rollback target/);
   rejects(receipt => { receipt.postcondition_inspections[0].response.incident.resolved_by_action_id = 'different-action'; }, /correlated recovery/);
   rejects(receipt => { receipt.postcondition_inspections[0].response.service.error_rate_percent = 99; }, /correlated recovery/);
+});
+
+test('rejects fabricated Verifier and Daytona proof', () => {
+  rejects(receipt => { receipt.verifier_tool_calls[0].thread_id = 'different-child'; }, /Verifier calls/);
+  rejects(receipt => { receipt.verifier_tool_calls[1].tool = 'execute_rollback'; }, /Verifier did not/);
+  rejects(receipt => { receipt.sandbox_references[0] = {}; }, /Daytona sandbox reference/);
+  rejects(receipt => { receipt.sandbox_exec_calls[0].sandbox_command_evidence.no_write_attempt = false; }, /write-capable/);
+  rejects(receipt => { receipt.sandbox_exec_calls.at(-1).validation_pass_observed = false; }, /passing read-only/);
+});
+
+test('rejects missing or reordered authority timestamps', () => {
+  rejects(receipt => { delete receipt.human_decisions[0].decided_at; }, /timestamp is missing/);
+  rejects(receipt => { receipt.human_decisions[0].decided_at = 'not-a-date'; }, /timestamp is invalid/);
+  rejects(receipt => { receipt.human_decisions[0].decided_at = '2026-08-25T09:00:00Z'; }, /predates the approval request/);
+  rejects(receipt => { receipt.postcondition_inspections[0].responded_at = '2026-08-25T09:00:00Z'; }, /postcondition does not follow/);
 });

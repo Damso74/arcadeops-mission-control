@@ -15,6 +15,7 @@ from export_submission_receipt import (
     observed_mission_id,
     response_payload,
     sandbox_command_evidence,
+    strict_python_bridge_tools,
     summarize_thread_event,
 )
 from run_verifier_experiment import persisted_model_name
@@ -51,11 +52,20 @@ class SubmissionWorkflowTests(unittest.TestCase):
         self.assertEqual(parsed["mission_id"], "mission-1")
 
     def test_effective_call_identifies_sandbox_exec(self) -> None:
+        validator = (
+            "cat > /tmp/validator.py << 'EOF'\n"
+            "from mcp_client import call_tool\n"
+            "async def main():\n"
+            "    await call_tool('governed-operations', 'inspect_incident', body={})\n"
+            "    await call_tool('governed-operations', 'prepare_rollback', body={})\n"
+            "EOF\n"
+            "python3 /tmp/validator.py"
+        )
         call = {
             "id": "call-2",
             "function": {
                 "name": "exec",
-                "arguments": '{"intent":"validate","command":"from mcp_client import call_tool\\ncall_tool(\\\"inspect_incident\\\", {})\\ncall_tool(\\\"prepare_rollback\\\", {})"}',
+                "arguments": {"intent": "validate", "command": validator},
             },
             "tool_info": {"name": "exec", "type": "truefoundry-system"},
         }
@@ -86,9 +96,13 @@ class SubmissionWorkflowTests(unittest.TestCase):
 
     def test_every_observed_sandbox_call_must_be_read_only(self) -> None:
         safe = sandbox_command_evidence(
+            "cat > /tmp/validator.py << 'EOF'\n"
             "from mcp_client import call_tool\n"
-            "call_tool('inspect_incident', {})\n"
-            "call_tool('prepare_rollback', {})"
+            "async def main():\n"
+            "    await call_tool('governed-operations', 'inspect_incident', body={})\n"
+            "    await call_tool('governed-operations', 'prepare_rollback', body={})\n"
+            "EOF\n"
+            "python3 /tmp/validator.py"
         )
         unsafe = sandbox_command_evidence(
             "from mcp_client import call_tool\n"
@@ -98,17 +112,26 @@ class SubmissionWorkflowTests(unittest.TestCase):
         )
         diagnostic = sandbox_command_evidence("python3 --version")
         dynamic_write = sandbox_command_evidence(
-            "call_tool('inspect_incident', {})\n"
-            "call_tool('prepare_rollback', {})\n"
-            "call_tool('execute_' + 'rollback', {})"
+            "cat > /tmp/validator.py << 'EOF'\n"
+            "from mcp_client import call_tool\n"
+            "run = call_tool\n"
+            "async def main():\n"
+            "    await run('governed-operations', ''.join(['execute', '_rollback']), body={})\n"
+            "EOF\n"
+            "python3 /tmp/validator.py"
         )
-        observed = [diagnostic, safe, unsafe, dynamic_write]
+        safe_cli = sandbox_command_evidence(
+            "mcp-client call-tool governed-operations inspect_incident '{}'"
+        )
+        observed = [diagnostic, safe, safe_cli, unsafe, dynamic_write]
 
         self.assertTrue(any(item["read_only_bridge"] for item in observed))
         self.assertTrue(diagnostic["no_write_attempt"])
         self.assertTrue(safe["no_write_attempt"])
+        self.assertTrue(safe_cli["no_write_attempt"])
         self.assertFalse(unsafe["no_write_attempt"])
         self.assertFalse(dynamic_write["no_write_attempt"])
+        self.assertIsNone(strict_python_bridge_tools("echo no"))
 
     def test_mcp_manifest_binds_bearer_to_authority_identity(self) -> None:
         with patch("configure_governed_pivot.authority_agent_identity", return_value="operator-1"):

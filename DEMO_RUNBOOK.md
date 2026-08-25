@@ -17,7 +17,7 @@ Required before recording:
 - TrueForge, Postgres, Redis and MCP are healthy;
 - sandbox capability is `VALID`;
 - `arcadeops-mission-control-v2` exists;
-- eighteen Python workflow and console tests, five adversarial Receipt-validator tests, and fifteen MCP black-box tests pass;
+- eighteen Python workflow and console tests, seven adversarial Receipt-validator tests, and fifteen MCP black-box tests pass;
 - for a new live run, `checkout-api` is degraded on `v42` and the stable target is `v41`; for the final video, the verified persisted session may be opened instead;
 - the final integrated session is either ready to run or already persisted.
 
