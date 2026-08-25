@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
   "receipt_kind": "trueforge-safe-rollback-acceptance",
-  "generated_at": "2026-08-25T12:31:22.544691Z",
+  "generated_at": "2026-08-25T13:29:25.003435Z",
   "source": "TrueForge 0.1.4 persisted public APIs",
   "mission_id": "TF-SAFE-ROLLBACK-001",
   "incident_id": "INC-2026-042",
@@ -52,6 +52,7 @@
         "mentions_execute_rollback": false,
         "direct_call_count": 0,
         "literal_tools": [],
+        "no_write_attempt": true,
         "read_only_bridge": false
       }
     },
@@ -72,6 +73,7 @@
         "mentions_execute_rollback": false,
         "direct_call_count": 0,
         "literal_tools": [],
+        "no_write_attempt": true,
         "read_only_bridge": false
       }
     },
@@ -92,6 +94,7 @@
         "mentions_execute_rollback": false,
         "direct_call_count": 0,
         "literal_tools": [],
+        "no_write_attempt": true,
         "read_only_bridge": false
       }
     },
@@ -112,6 +115,7 @@
         "mentions_execute_rollback": false,
         "direct_call_count": 0,
         "literal_tools": [],
+        "no_write_attempt": true,
         "read_only_bridge": false
       }
     },
@@ -132,6 +136,7 @@
         "mentions_execute_rollback": false,
         "direct_call_count": 0,
         "literal_tools": [],
+        "no_write_attempt": true,
         "read_only_bridge": false
       }
     },
@@ -152,6 +157,7 @@
         "mentions_execute_rollback": false,
         "direct_call_count": 0,
         "literal_tools": [],
+        "no_write_attempt": true,
         "read_only_bridge": false
       }
     },
@@ -175,6 +181,7 @@
           "inspect_incident",
           "prepare_rollback"
         ],
+        "no_write_attempt": true,
         "read_only_bridge": true
       }
     }

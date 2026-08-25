@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import unittest
 from html.parser import HTMLParser
 from pathlib import Path
@@ -35,6 +36,7 @@ class EvidenceConsoleTests(unittest.TestCase):
         parser = IdCollector()
         parser.feed(html)
         required_ids = {
+            "console-root",
             "page-title",
             "evidence-state",
             "proof",
@@ -45,6 +47,19 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertEqual(html.count("<h1"), 1)
         self.assertIn("Evidence unavailable", script)
         self.assertNotIn("innerHTML", script)
+        self.assertIn('data-evidence-status="loading"', html)
+        self.assertNotIn("Mission complete · human approved", html)
+        self.assertNotIn("Checkout recovered.", html)
+
+    def test_receipt_validator_rejects_incomplete_or_uncorrelated_evidence(self) -> None:
+        result = subprocess.run(
+            ["node", "--test", str(ROOT / "evidence_console" / "test_receipt_validator.mjs")],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

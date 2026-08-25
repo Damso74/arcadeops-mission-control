@@ -24,9 +24,9 @@ All records are fictional. No ArcadeOps production system, customer account, or 
 | Daytona sandbox execution with bridged MCP reads | Verified with a real Daytona sandbox and `SANDBOX_VALIDATION_PASS` | PASS |
 | Strict integrated Evidence Receipt | 22/22 persisted checks in session `01m0w4epkt6803zxs2awnhgz8s` | PASS |
 | Human-readable Evidence Console | Receipt-backed, responsive, and fail-closed | PASS |
-| Public repository and complete submission PR | [Repository](https://github.com/Damso74/arcadeops-mission-control) and [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1) published | PASS |
-| Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 findings resolved, follow-up reports 0 bugs | PASS |
-| Final three-minute video | Storyboard and local draft available | **PENDING final integrated run** |
+| Public repository and complete submission PRs | [Repository](https://github.com/Damso74/arcadeops-mission-control), [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1), and [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) published | PASS |
+| Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 resolved; [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2): 4/4 first-pass findings remediated | PASS |
+| Final three-minute video | 169-second, 1280×720 final render verified locally | PASS — upload pending |
 
 The strict exporter produced `SUBMISSION_ACCEPTANCE_PASS` for persisted session `01m0w4epkt6803zxs2awnhgz8s`. It validated all 22 required links and still fails closed when the degraded precondition, Daytona, read-only sandbox validation, the Verifier, correlated human approval, the authorized write, or the recovered postcondition is absent.
 
@@ -124,7 +124,7 @@ npm --prefix mcp_server test
 npm --prefix mcp_server audit --omit=dev
 ```
 
-Expected: sixteen Python workflow and console tests, fifteen MCP black-box tests, and no production dependency vulnerability.
+Expected: eighteen Python workflow and console tests, five adversarial Receipt-validator tests, fifteen MCP black-box tests, and no production dependency vulnerability.
 
 ## Integrated acceptance run
 
@@ -161,11 +161,11 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 **Gate satisfied on PR #1.** Qodo found six issues: three high, two medium, and one low. Commit `0adf7f1` replaced forgeable deterministic tokens with random single-use prepared tokens, added fail-closed expiry and caller identity enforcement, derived receipt identities from persisted evidence, prohibited sandbox writes, derived the mission id, and correlated approval, Allow, and execution by tool-call id. Qodo's automatic follow-up against that commit reports **0 bugs** and marks all six findings resolved.
 
-The PR remains intentionally unmerged until the participant performs the required human review and merge. The Safe Rollback and Evidence Console changes will then be published as PR #2 for their own Qodo cycle.
+The PR remains intentionally unmerged until the participant performs the required human review and merge. [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) is already open as a stacked PR and contains the Safe Rollback, strict Receipt, and Evidence Console. Qodo's first PR #2 pass found four issues; all four are covered by the current remediation and adversarial tests.
 
 ## Publication status and disclosure
 
-The project is licensed under the [MIT License](LICENSE). The repository and complete PR are public. PR #1 has passed CI, GitGuardian, and the Qodo remediation cycle; human merge and the final hackathon submission are still pending.
+The project is licensed under the [MIT License](LICENSE). The repository and both PRs are public. PR #1 has passed CI, GitGuardian, and the Qodo remediation cycle; PR #2 contains the completed product and its Qodo remediation. Human merge and the final hackathon submission are still pending.
 
 Claude Code assisted with the initial spike skeleton, MCP hardening, and black-box test design. OpenAI Codex assisted with implementation, runtime integration, execution, verification, correction, and documentation. Damien must review and understand the submitted code before the human merge and submission.
 

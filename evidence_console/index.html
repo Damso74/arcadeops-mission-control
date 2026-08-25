@@ -7,10 +7,10 @@
     <meta name="description" content="A human-readable proof of one approval-gated AI operation executed by TrueForge.">
     <title>ArcadeOps Mission Control</title>
     <link rel="stylesheet" href="./styles.css">
-    <script src="./app.js" defer></script>
+    <script src="./app.js" type="module"></script>
   </head>
   <body>
-    <main class="shell" aria-labelledby="page-title">
+    <main class="shell" id="console-root" data-evidence-status="loading" aria-labelledby="page-title">
       <header class="topbar">
         <a class="brand" href="#top" aria-label="ArcadeOps Mission Control home">
           <span class="brand-mark" aria-hidden="true">A</span>
@@ -23,19 +23,16 @@
       </header>
 
       <section class="hero" id="top">
-        <div class="eyebrow">Mission complete · human approved</div>
-        <h1 id="page-title">Checkout recovered.<br><span>Every step proved.</span></h1>
-        <p class="lede">
-          An AI operator rolled back one fictional service. It could inspect and prepare freely,
-          but only a human could authorize the final write.
-        </p>
-        <div class="hero-actions">
+        <div class="eyebrow" id="hero-eyebrow">Verifying persisted evidence</div>
+        <h1 id="page-title"><span id="headline-primary">Checking evidence.</span><br><span id="headline-secondary">Please wait.</span></h1>
+        <p class="lede" id="hero-lede">Recovery claims stay hidden until the complete authority chain has been validated.</p>
+        <div class="hero-actions success-only">
           <a class="primary-action" href="#proof">See the proof <span aria-hidden="true">↓</span></a>
           <span class="plain-trust">No production access. No hidden writes.</span>
         </div>
       </section>
 
-      <section class="outcome-card" aria-label="Recovery result">
+      <section class="outcome-card success-only" aria-label="Recovery result">
         <div class="outcome-copy">
           <span class="section-label">Recovery result</span>
           <div class="service-line">
@@ -60,7 +57,7 @@
         </div>
       </section>
 
-      <section class="proof" id="proof" aria-labelledby="proof-title">
+      <section class="proof success-only" id="proof" aria-labelledby="proof-title">
         <div class="section-heading">
           <div>
             <span class="section-label">One safe path</span>
@@ -96,7 +93,7 @@
               <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
               <div><dt>Verifier</dt><dd id="verifier-name">1 independent child agent</dd></div>
               <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona · isolated</dd></div>
-              <div><dt>Authority</dt><dd>checkout-api · v42 to v41 · max 1 write</dd></div>
+              <div><dt>Authority</dt><dd id="authority-name">Verified from receipt</dd></div>
               <div><dt>Decision</dt><dd id="decision-time">Human Allow · correlated</dd></div>
             </dl>
             <div class="check-panel">
@@ -114,7 +111,7 @@
         </details>
       </section>
 
-      <footer>
+      <footer class="success-only">
         <span>Fictional incident. Real harness evidence.</span>
         <span>Delegate the work. Never unlimited authority.</span>
       </footer>

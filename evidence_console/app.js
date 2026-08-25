@@ -1,3 +1,5 @@
+import { validateReceipt } from './receipt-validator.mjs';
+
 const receiptUrl = '../evidence/submission-evidence-receipt.json';
 
 const setText = (id, value) => {
@@ -6,7 +8,7 @@ const setText = (id, value) => {
 };
 
 function evidenceCount(checks) {
-  return Object.values(checks ?? {}).filter(Boolean).length;
+  return Object.keys(checks).length;
 }
 
 function humanizeCheck(name) {
@@ -16,41 +18,39 @@ function humanizeCheck(name) {
 }
 
 function renderReceipt(receipt) {
-  if (receipt.final_status !== 'SUBMISSION_ACCEPTANCE_PASS') {
-    throw new Error('The submitted receipt is not a passing acceptance receipt.');
-  }
-  const failedChecks = Object.entries(receipt.verification_results ?? {}).filter(([, passed]) => !passed);
-  if (failedChecks.length > 0) throw new Error('At least one required verification is missing.');
-
-  const precondition = receipt.precondition_inspections?.[0]?.response ?? {};
-  const postcondition = receipt.postcondition_inspections?.at(-1)?.response ?? {};
-  const serviceBefore = precondition.service ?? {};
-  const service = postcondition.service ?? {};
-  const write = receipt.executed_writes?.[0] ?? {};
-  const approvedWrites = receipt.approval_correlated_writes ?? receipt.executed_writes ?? [];
+  const evidence = validateReceipt(receipt);
+  const serviceBefore = evidence.precondition.service;
+  const service = evidence.postcondition.service;
+  const write = evidence.write;
+  const checkCount = evidenceCount(evidence.checks);
 
   setText('service-name', receipt.service_id);
   setText('incident-name', receipt.incident_id);
-  setText('from-version', write.response?.before?.deployed_version ?? serviceBefore.deployed_version);
-  setText('to-version', service.deployed_version ?? receipt.target_version);
-  setText('before-rate', `${write.response?.before?.error_rate_percent ?? serviceBefore.error_rate_percent}%`);
-  setText('after-rate', `${service.error_rate_percent ?? 0.7}%`);
-  setText('check-count', evidenceCount(receipt.verification_results));
-  setText('approval-count', receipt.human_decisions?.filter(item => item.decision === 'allow').length ?? 0);
-  setText('write-count', approvedWrites.length);
+  setText('from-version', serviceBefore.deployed_version);
+  setText('to-version', service.deployed_version);
+  setText('before-rate', `${serviceBefore.error_rate_percent}%`);
+  setText('after-rate', `${service.error_rate_percent}%`);
+  setText('check-count', checkCount);
+  setText('approval-count', '1');
+  setText('write-count', '1');
   setText('model-name', `${receipt.model_provider}/${receipt.model_name}`);
-  setText('verifier-name', `${receipt.subagent_events?.length ?? 0} independent child agent`);
+  setText('verifier-name', '1 independent child agent');
   setText('sandbox-name', `${receipt.sandbox_provider} · isolated`);
-  setText('decision-time', `Human Allow · ${receipt.human_decisions?.[0]?.decided_at?.slice(11, 19) ?? 'correlated'}`);
-  setText('receipt-date', `Sealed ${receipt.generated_at?.slice(0, 10) ?? ''}`);
-  setText('proof-summary', `${evidenceCount(receipt.verification_results)}/${evidenceCount(receipt.verification_results)} checks passed`);
+  setText('authority-name', `${receipt.service_id} · ${serviceBefore.deployed_version} to ${receipt.target_version} · max 1 write`);
+  setText('decision-time', `Human Allow · ${evidence.decision.decided_at.slice(11, 19)}`);
+  setText('receipt-date', `Sealed ${receipt.generated_at.slice(0, 10)}`);
+  setText('proof-summary', `${checkCount}/${checkCount} checks passed`);
+  setText('headline-primary', 'Checkout recovered.');
+  setText('headline-secondary', 'Every step proved.');
+  setText('hero-eyebrow', 'Mission complete · human approved');
+  setText('hero-lede', 'An AI operator rolled back one fictional service. It could inspect and prepare freely, but only a human could authorize the final write.');
 
   const sessionLink = document.getElementById('session-link');
   sessionLink.href = `http://127.0.0.1:8791/sessions/${encodeURIComponent(receipt.session_id)}`;
 
   const checkList = document.getElementById('check-list');
-  Object.entries(receipt.verification_results).forEach(([name, passed]) => {
-    if (!passed) return;
+  checkList.replaceChildren();
+  Object.keys(evidence.checks).forEach(name => {
     const item = document.createElement('li');
     item.textContent = humanizeCheck(name);
     checkList.append(item);
@@ -59,14 +59,19 @@ function renderReceipt(receipt) {
   const state = document.getElementById('evidence-state');
   state.dataset.status = 'pass';
   state.lastElementChild.textContent = 'Evidence verified';
+  document.getElementById('console-root').dataset.evidenceStatus = 'pass';
 }
 
 function renderFailure() {
+  const root = document.getElementById('console-root');
+  root.dataset.evidenceStatus = 'fail';
   const state = document.getElementById('evidence-state');
   state.dataset.status = 'fail';
   state.lastElementChild.textContent = 'Evidence unavailable';
-  document.querySelector('.eyebrow').textContent = 'Mission evidence unavailable';
-  document.querySelector('.plain-trust').textContent = 'The console fails closed when proof cannot be loaded.';
+  setText('hero-eyebrow', 'Mission evidence unavailable');
+  setText('headline-primary', 'Evidence unavailable.');
+  setText('headline-secondary', 'No success claimed.');
+  setText('hero-lede', 'The receipt could not prove the full authority chain. This console fails closed and hides every recovery claim.');
 }
 
 fetch(receiptUrl, { cache: 'no-store' })

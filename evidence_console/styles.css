@@ -86,6 +86,10 @@ a { color: inherit; }
 .evidence-state[data-status="pass"] .state-dot { background: var(--green); box-shadow: 0 0 0 4px rgba(127, 213, 163, 0.1); }
 .evidence-state[data-status="fail"] .state-dot { background: #e4746d; }
 
+[data-evidence-status]:not([data-evidence-status="pass"]) .success-only { display: none; }
+[data-evidence-status="fail"] .eyebrow { color: #e89189; }
+[data-evidence-status="fail"] h1 span:last-child { color: #e89189; }
+
 .hero { padding: 88px 0 62px; max-width: 900px; }
 
 .eyebrow,

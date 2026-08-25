@@ -34,8 +34,8 @@ jobs:
           cache: npm
           cache-dependency-path: mcp_server/package-lock.json
 
-      - name: Run workflow tests
-        run: python runner/test_submission_workflow.py -v
+      - name: Run workflow and Evidence Console tests
+        run: python -m unittest discover -s runner -p "test_*.py" -v
 
       - name: Install MCP dependencies
         working-directory: mcp_server

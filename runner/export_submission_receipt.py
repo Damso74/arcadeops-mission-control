@@ -71,11 +71,22 @@ def observed_mission_id(calls: list[dict[str, Any]], responses: dict[str, dict[s
 
 def sandbox_command_evidence(command: str) -> dict[str, Any]:
     direct_call_count = len(re.findall(r"\bcall_tool\s*\(", command))
+    direct_tool_names = [
+        match.group(2)
+        for match in re.finditer(r"\bcall_tool\s*\(\s*(['\"])([a-z_]+)\1", command)
+    ]
     literal_tools = {
         match.group(2)
         for match in re.finditer(r"(['\"])([a-z_]+)\1", command)
         if match.group(2) in KNOWN_MCP_TOOLS
     }
+    compacted_command = re.sub(r"[\s'\"+]", "", command).lower()
+    read_only_bridge = direct_call_count == 2 and literal_tools == READ_ONLY_SANDBOX_TOOLS
+    no_write_attempt = read_only_bridge or (
+        "execute_rollback" not in compacted_command
+        and direct_call_count == len(direct_tool_names)
+        and set(direct_tool_names).issubset(READ_ONLY_SANDBOX_TOOLS)
+    )
     return {
         "command_sha256": hashlib.sha256(command.encode("utf-8")).hexdigest(),
         "uses_mcp_client": "mcp_client" in command or "mcp-client" in command,
@@ -84,7 +95,8 @@ def sandbox_command_evidence(command: str) -> dict[str, Any]:
         "mentions_execute_rollback": "execute_rollback" in literal_tools,
         "direct_call_count": direct_call_count,
         "literal_tools": sorted(literal_tools),
-        "read_only_bridge": direct_call_count == 2 and literal_tools == READ_ONLY_SANDBOX_TOOLS,
+        "no_write_attempt": no_write_attempt,
+        "read_only_bridge": read_only_bridge,
     }
 
 
@@ -379,7 +391,11 @@ def main() -> int:
         "daytona_sandbox_created": bool(sandbox_ids) and all(is_daytona_sandbox_id(item) for item in sandbox_ids),
         "sandbox_exec_observed": bool(sandbox_calls),
         "sandbox_generated_code_uses_mcp_bridge": bool(sandbox_mcp_bridge_calls),
-        "sandbox_validator_read_only": bool(sandbox_pass_calls),
+        "sandbox_validator_read_only": bool(sandbox_pass_calls)
+        and all(
+            (call.get("sandbox_command_evidence") or {}).get("no_write_attempt") is True
+            for call in sandbox_calls
+        ),
         "sandbox_validation_pass_observed": bool(sandbox_pass_calls),
         "sandbox_validation_before_write": bool(pass_times and write_attempt_times)
         and min(pass_times) < min(write_attempt_times),
@@ -399,7 +415,18 @@ def main() -> int:
     }
     if not all(checks.values()):
         failed = [name for name, passed in checks.items() if not passed]
-        raise RuntimeError(f"Submission evidence incomplete: {', '.join(failed)}")
+        details = ""
+        if "sandbox_validator_read_only" in failed:
+            unsafe_calls = [
+                {
+                    "tool_call_id": call.get("tool_call_id"),
+                    "evidence": call.get("sandbox_command_evidence"),
+                }
+                for call in sandbox_calls
+                if (call.get("sandbox_command_evidence") or {}).get("no_write_attempt") is not True
+            ]
+            details = f"; sandbox calls requiring review: {json.dumps(unsafe_calls, ensure_ascii=False)}"
+        raise RuntimeError(f"Submission evidence incomplete: {', '.join(failed)}{details}")
 
     timestamps = [event.get("created_at") for event in events if event.get("created_at")]
     receipt = {
