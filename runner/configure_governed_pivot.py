@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -16,6 +18,50 @@ from urllib.request import Request, urlopen
 
 MCP_NAME = "governed-operations"
 AGENT_NAME = "arcadeops-governed-operator-v1"
+WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
+
+
+def local_secret(name: str) -> str | None:
+    value = os.environ.get(name)
+    if value:
+        return value
+    secret_file = WORKSPACE_ROOT / ".env.requalification"
+    if not secret_file.is_file():
+        return None
+    for raw_line in secret_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, candidate = line.split("=", 1)
+        if key.strip() == name and candidate:
+            return candidate
+    return None
+
+
+def authority_agent_identity() -> str:
+    authority = json.loads((WORKSPACE_ROOT / "mcp_server" / "authority_contract.json").read_text(encoding="utf-8"))
+    identity = authority.get("agent_identity")
+    if not isinstance(identity, str) or not identity:
+        raise RuntimeError("AUTHORITY_AGENT_IDENTITY=INVALID")
+    return identity
+
+
+def mcp_manifest(mcp_url: str, auth_token: str | None) -> dict[str, Any]:
+    if not auth_token or len(auth_token) < 32:
+        raise RuntimeError("TRUEFORGE_MCP_AUTH_TOKEN=ABSENT_OR_TOO_SHORT")
+    return {
+        "type": "remote",
+        "name": MCP_NAME,
+        "url": mcp_url,
+        "description": "Fictional approval-gated operations governed by an executable AuthorityContract.",
+        "auth": {
+            "type": "header",
+            "headers": {
+                "Authorization": f"Bearer {auth_token}",
+                "X-Agent-Identity": authority_agent_identity(),
+            },
+        },
+    }
 
 
 def request_json(
@@ -90,15 +136,11 @@ def main() -> int:
         default="http://trueforge-governed-mcp-20260824:8765/mcp",
         help="URL reachable from the TrueForge server container",
     )
+    parser.add_argument("--mcp-auth-token", default=local_secret("TRUEFORGE_MCP_AUTH_TOKEN"), help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     request_json(args.base_url, "/settings/mcp-servers", "PUT", {
-        "manifest": {
-            "type": "remote",
-            "name": MCP_NAME,
-            "url": args.mcp_url,
-            "description": "Fictional approval-gated operations governed by an executable AuthorityContract.",
-        }
+        "manifest": mcp_manifest(args.mcp_url, args.mcp_auth_token)
     })
 
     discovered = request_json(args.base_url, f"/mcp-servers/{MCP_NAME}/tools").get("data", [])

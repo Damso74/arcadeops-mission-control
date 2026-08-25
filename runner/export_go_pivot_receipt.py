@@ -45,6 +45,47 @@ def clean_arguments(raw: Any) -> dict[str, Any]:
     return {key: value for key, value in arguments.items() if key != "change_token"}
 
 
+def observed_mission_id(
+    tool_calls: dict[str, dict[str, Any]],
+    responses: dict[str, dict[str, Any]],
+) -> str:
+    mission_ids = {
+        mission_id
+        for call in tool_calls.values()
+        if call.get("tool_type") == "mcp"
+        for mission_id in [(call.get("arguments") or {}).get("mission_id")]
+        if isinstance(mission_id, str) and mission_id
+    }
+    mission_ids.update(
+        payload["mission_id"]
+        for call_id, call in tool_calls.items()
+        if call.get("tool_type") == "mcp"
+        for payload in [responses.get(call_id, {}).get("payload")]
+        if isinstance(payload, dict) and isinstance(payload.get("mission_id"), str) and payload["mission_id"]
+    )
+    if len(mission_ids) != 1:
+        raise RuntimeError(f"Expected exactly one observed mission_id, got {sorted(mission_ids)}")
+    return next(iter(mission_ids))
+
+
+def correlated_executed_action_ids(
+    actions_executed: list[dict[str, Any]],
+    approvals: list[dict[str, Any]],
+    decisions: list[dict[str, Any]],
+) -> set[str]:
+    approval_ids = {item.get("tool_call_id") for item in approvals if item.get("tool_call_id")}
+    allowed_ids = {
+        item.get("tool_call_id")
+        for item in decisions
+        if item.get("tool_call_id") and item.get("decision") == "allow"
+    }
+    return {
+        item["tool_call_id"]
+        for item in actions_executed
+        if item.get("tool_call_id") in approval_ids and item.get("tool_call_id") in allowed_ids
+    }
+
+
 def list_turn_events(base_url: str, session_id: str, turn_id: str) -> list[dict[str, Any]]:
     path = f"/sessions/{quote(session_id, safe='')}/turns/{quote(turn_id, safe='')}/events"
     result: list[dict[str, Any]] = []
@@ -175,13 +216,15 @@ def main() -> int:
     model_reference = ((agent.get("manifest") or {}).get("model") or {}).get("name", "unknown/unknown")
     provider, _, model_name = model_reference.partition("/")
     all_turns_done = bool(turns) and all((turn.get("state") or {}).get("status") == "done" for turn in turns)
+    mission_id = observed_mission_id(tool_calls, responses)
+    correlated_action_ids = correlated_executed_action_ids(actions_executed, approvals, decisions)
 
     receipt = {
         "schema_version": "1.0.0",
         "receipt_kind": "trueforge-go-pivot-acceptance",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": "TrueForge 0.1.4 persisted public APIs",
-        "mission_id": "TF-MISSION-20260824-001",
+        "mission_id": mission_id,
         "session_id": args.session_id,
         "agent_identity": {"id": agent.get("id"), "name": agent.get("name")},
         "model_provider": provider,
@@ -202,7 +245,7 @@ def main() -> int:
             "native_approval_pause_observed": len(approvals) >= 2,
             "human_deny_observed": any(item.get("decision") == "deny" for item in decisions),
             "human_allow_observed": any(item.get("decision") == "allow" for item in decisions),
-            "authorized_write_executed_once": len(actions_executed) == 1,
+            "authorized_write_executed_once": len(actions_executed) == 1 and len(correlated_action_ids) == 1,
             "authority_denial_observed": any(item.get("authority") == "AuthorityContract" for item in actions_blocked),
             "model_identity_resolved": provider != "unknown" and model_name != "unknown",
         },

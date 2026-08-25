@@ -27,16 +27,19 @@ TRUEFORGE_PROVIDER_BASE_URL=
 TRUEFORGE_MODEL_ID=claude-sonnet-5
 TRUEFORGE_MODEL_NAME=Claude Sonnet 5
 TRUEFORGE_MODEL_API_KEY=
+TRUEFORGE_MCP_AUTH_TOKEN=
 DAYTONA_API_KEY=
 ```
 
 `runner/resume_requalification.ps1` imports the ignored file into the process and writes provider manifests to the local TrueForge Settings API. It reports only presence and validity states.
 
+Generate the MCP bearer locally with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Store it only as `TRUEFORGE_MCP_AUTH_TOKEN` in `.env.requalification`; never commit or print the real value.
+
 ## Start and configure
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\runner\resume_requalification.ps1 -Configure
-docker compose -f compose.mcp.yml up -d --build
+docker compose --env-file .env.requalification -f compose.mcp.yml up -d --build
 python runner/configure_governed_pivot.py
 python runner/configure_submission_agent.py
 ```

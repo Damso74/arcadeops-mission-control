@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,10 @@ from urllib.parse import quote, urlencode
 
 from configure_governed_pivot import MCP_NAME, request_json
 from configure_submission_agent import AGENT_NAME
+
+
+READ_ONLY_SANDBOX_TOOLS = {"inspect_records", "prepare_status_change"}
+KNOWN_MCP_TOOLS = READ_ONLY_SANDBOX_TOOLS | {"apply_status_change", "export_evidence"}
 
 
 def get_json(base_url: str, path: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -38,6 +43,62 @@ def response_payload(event: dict[str, Any]) -> Any:
         )
         return parse_json(text)
     return payload
+
+
+def observed_mission_id(calls: list[dict[str, Any]], responses: dict[str, dict[str, Any]]) -> str:
+    mission_ids = {
+        mission_id
+        for call in calls
+        if call.get("server") == MCP_NAME
+        for mission_id in [call.get("mission_id")]
+        if isinstance(mission_id, str) and mission_id
+    }
+    mission_ids.update(
+        payload["mission_id"]
+        for call in calls
+        if call.get("server") == MCP_NAME
+        for payload in [responses.get(call.get("tool_call_id"), {}).get("payload")]
+        if isinstance(payload, dict) and isinstance(payload.get("mission_id"), str) and payload["mission_id"]
+    )
+    if len(mission_ids) != 1:
+        raise RuntimeError(f"Expected exactly one observed mission_id, got {sorted(mission_ids)}")
+    return next(iter(mission_ids))
+
+
+def sandbox_command_evidence(command: str) -> dict[str, Any]:
+    direct_call_count = len(re.findall(r"\bcall_tool\s*\(", command))
+    literal_tools = {
+        match.group(2)
+        for match in re.finditer(r"(['\"])([a-z_]+)\1", command)
+        if match.group(2) in KNOWN_MCP_TOOLS
+    }
+    return {
+        "command_sha256": hashlib.sha256(command.encode("utf-8")).hexdigest(),
+        "uses_mcp_client": "mcp_client" in command or "mcp-client" in command,
+        "mentions_inspect_records": "inspect_records" in literal_tools,
+        "mentions_prepare_status_change": "prepare_status_change" in literal_tools,
+        "mentions_apply_status_change": "apply_status_change" in literal_tools,
+        "direct_call_count": direct_call_count,
+        "literal_tools": sorted(literal_tools),
+        "read_only_bridge": direct_call_count == 2 and literal_tools == READ_ONLY_SANDBOX_TOOLS,
+    }
+
+
+def correlated_executed_writes(
+    executed_writes: list[dict[str, Any]],
+    approvals: list[dict[str, Any]],
+    decisions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    approval_ids = {item.get("tool_call_id") for item in approvals if item.get("tool_call_id")}
+    allowed_ids = {
+        item.get("tool_call_id")
+        for item in decisions
+        if item.get("tool_call_id") and item.get("decision") == "allow"
+    }
+    return [
+        call for call in executed_writes
+        if call.get("tool_call_id") in approval_ids and call.get("tool_call_id") in allowed_ids
+    ]
 
 
 def list_events(base_url: str, session_id: str, turn_id: str) -> list[dict[str, Any]]:
@@ -68,6 +129,11 @@ def effective_call(call: dict[str, Any], event: dict[str, Any]) -> dict[str, Any
         server = arguments["mcp_server"]
         tool = arguments["tool_name"]
         tool_type = "mcp"
+        nested_arguments = parse_json(
+            arguments.get("input") or arguments.get("arguments") or arguments.get("tool_arguments")
+        )
+        if isinstance(nested_arguments, dict):
+            arguments = nested_arguments
     result = {
         "thread_id": event.get("thread_id"),
         "tool_call_id": call.get("id"),
@@ -77,14 +143,13 @@ def effective_call(call: dict[str, Any], event: dict[str, Any]) -> dict[str, Any
         "transport_tool": function.get("name"),
         "attempted_at": event.get("created_at"),
     }
+    if isinstance(arguments.get("mission_id"), str) and arguments["mission_id"]:
+        result["mission_id"] = arguments["mission_id"]
     if tool == "exec" and server == "sandbox":
         command = str(arguments.get("command") or "")
         result["sandbox_command_evidence"] = {
             "intent": arguments.get("intent"),
-            "command_sha256": hashlib.sha256(command.encode("utf-8")).hexdigest(),
-            "uses_mcp_client": "mcp_client" in command or "mcp-client" in command,
-            "mentions_inspect_records": "inspect_records" in command,
-            "mentions_prepare_status_change": "prepare_status_change" in command,
+            **sandbox_command_evidence(command),
         }
     return result
 
@@ -147,18 +212,32 @@ def main() -> int:
         and (call.get("sandbox_command_evidence") or {}).get("mentions_inspect_records")
         and (call.get("sandbox_command_evidence") or {}).get("mentions_prepare_status_change")
     ]
+    sandbox_readonly_bridge_calls = [
+        call for call in sandbox_mcp_bridge_calls
+        if (call.get("sandbox_command_evidence") or {}).get("read_only_bridge")
+    ]
     sandbox_pass_calls = [
-        call for call in sandbox_calls
+        call for call in sandbox_readonly_bridge_calls
         if "SANDBOX_VALIDATION_PASS" in json.dumps(responses.get(call["tool_call_id"], {}).get("payload"), ensure_ascii=False)
     ]
     verifier_calls = [call for call in calls if call.get("thread_id") in verifier_thread_ids]
-    verifier_tools = {call.get("tool") for call in verifier_calls if call.get("server") == MCP_NAME}
+    mission_id = observed_mission_id(calls, responses)
+    verifier_tools = {
+        call.get("tool")
+        for call in verifier_calls
+        if call.get("server") == MCP_NAME
+        and call.get("mission_id") == mission_id
+        and isinstance(responses.get(call.get("tool_call_id"), {}).get("payload"), dict)
+        and not responses[call["tool_call_id"]]["payload"].get("error")
+        and responses[call["tool_call_id"]]["payload"].get("mission_id") == mission_id
+    }
     write_calls = [call for call in calls if call.get("tool") == "apply_status_change" and call.get("server") == MCP_NAME]
     executed_writes = [
         call for call in write_calls
         if isinstance(responses.get(call["tool_call_id"], {}).get("payload"), dict)
         and responses[call["tool_call_id"]]["payload"].get("applied") is True
     ]
+    authorized_executed_writes = correlated_executed_writes(executed_writes, approvals, decisions)
     write_times = [call.get("attempted_at") for call in write_calls if call.get("attempted_at")]
     pass_times = [
         responses.get(call["tool_call_id"], {}).get("responded_at")
@@ -181,11 +260,15 @@ def main() -> int:
         "daytona_sandbox_created": bool(sandbox_ids) and all("daytona" in sandbox_id for sandbox_id in sandbox_ids),
         "sandbox_exec_observed": bool(sandbox_calls),
         "sandbox_generated_code_uses_mcp_bridge": bool(sandbox_mcp_bridge_calls),
+        "sandbox_validator_read_only": bool(sandbox_calls) and all(
+            (call.get("sandbox_command_evidence") or {}).get("read_only_bridge")
+            for call in sandbox_calls
+        ),
         "sandbox_validation_pass_observed": bool(sandbox_pass_calls),
         "sandbox_validation_before_write": bool(pass_times and write_times) and min(pass_times) < min(write_times),
         "native_approval_pause_observed": bool(approvals),
         "human_allow_observed": any(item.get("decision") == "allow" for item in decisions),
-        "authorized_write_executed_once": len(executed_writes) == 1,
+        "authorized_write_executed_once": len(executed_writes) == 1 and len(authorized_executed_writes) == 1,
         "model_identity_resolved": provider != "unknown" and bool(model_name),
     }
     if not all(checks.values()):
@@ -198,7 +281,7 @@ def main() -> int:
         "receipt_kind": "trueforge-submission-acceptance",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": "TrueForge 0.1.4 persisted public APIs",
-        "mission_id": "TF-MISSION-20260824-001",
+        "mission_id": mission_id,
         "session_id": args.session_id,
         "agent_identity": {"id": agent.get("id"), "name": agent.get("name")},
         "model_provider": provider,
@@ -211,6 +294,7 @@ def main() -> int:
         "human_decisions": decisions,
         "write_calls": write_calls,
         "executed_writes": executed_writes,
+        "approval_correlated_writes": authorized_executed_writes,
         "verification_results": checks,
         "prior_evidence": [
             "evidence/go-pivot-evidence-receipt.json",

@@ -38,6 +38,13 @@ def list_events(base_url: str, session_id: str, turn_id: str) -> list[dict[str, 
             return events
 
 
+def persisted_model_name(agent: dict[str, Any]) -> str:
+    model = ((agent.get("manifest") or {}).get("model") or {}).get("name")
+    if not isinstance(model, str) or "/" not in model or not all(model.split("/", 1)):
+        raise RuntimeError("Verifier agent model identity could not be resolved")
+    return model
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8791/api/v1")
@@ -133,6 +140,13 @@ def main() -> int:
         failed = [name for name, passed in checks.items() if not passed]
         raise RuntimeError(f"Verifier acceptance failed: {', '.join(failed)}")
 
+    agent_ref = session.get("agent") or {}
+    agent_id = agent_ref.get("id")
+    if not agent_id:
+        raise RuntimeError("Verifier session agent identity could not be resolved")
+    agent = get_json(args.base_url, f"/agents/{quote(str(agent_id), safe='')}").get("data", {})
+    model = persisted_model_name(agent)
+
     receipt = {
         "schema_version": "1.0.0",
         "receipt_kind": "trueforge-dynamic-verifier-experiment",
@@ -140,7 +154,7 @@ def main() -> int:
         "session_id": session["id"],
         "turn_id": turn["id"],
         "agent_name": AGENT_NAME,
-        "model": "anthropic/claude-sonnet-5",
+        "model": model,
         "subagent_events": [
             {
                 "event_id": event.get("id"),

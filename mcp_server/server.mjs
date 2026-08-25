@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,8 +13,16 @@ const authorityPath = resolve(process.env.AUTHORITY_PATH ?? resolve(moduleDirect
 const seedPath = resolve(moduleDirectory, 'data', 'records.seed.json');
 const statePath = resolve(process.env.STATE_PATH ?? resolve(moduleDirectory, 'data', 'records.json'));
 const port = Number.parseInt(process.env.PORT ?? '8765', 10);
+const pendingChangeTtlMs = 15 * 60 * 1000;
 
 const authority = JSON.parse(await readFile(authorityPath, 'utf8'));
+const mcpAuthToken = process.env.MCP_AUTH_TOKEN;
+if (typeof mcpAuthToken !== 'string' || mcpAuthToken.length < 32) {
+  throw new Error('MCP_AUTH_TOKEN must be set to at least 32 characters');
+}
+if (typeof authority.agent_identity !== 'string' || authority.agent_identity.length === 0) {
+  throw new Error('AuthorityContract agent_identity must be a non-empty string');
+}
 
 function textResult(payload, isError = false) {
   return {
@@ -28,7 +36,11 @@ function assertContractActive(missionId) {
   if (missionId !== authority.mission_id) {
     throw new Error('AUTHORITY_DENIED: mission_id does not match the active AuthorityContract');
   }
-  if (Date.now() >= Date.parse(authority.expires_at)) {
+  const expiresAt = Date.parse(authority.expires_at);
+  if (!Number.isFinite(expiresAt)) {
+    throw new Error('AUTHORITY_DENIED: AuthorityContract expires_at is invalid');
+  }
+  if (Date.now() >= expiresAt) {
     throw new Error('AUTHORITY_DENIED: AuthorityContract has expired');
   }
 }
@@ -54,10 +66,12 @@ function assertWriteAllowed(recordId, status) {
   }
 }
 
-function changeToken(missionId, recordId, fromStatus, toStatus) {
-  return createHash('sha256')
-    .update(`${missionId}\n${recordId}\n${fromStatus}\n${toStatus}`)
-    .digest('hex');
+function digest(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function secureEquals(left, right) {
+  return timingSafeEqual(Buffer.from(digest(left), 'hex'), Buffer.from(digest(right), 'hex'));
 }
 
 async function ensureState() {
@@ -71,7 +85,16 @@ async function ensureState() {
 }
 
 async function readState() {
-  return JSON.parse(await readFile(statePath, 'utf8'));
+  const state = JSON.parse(await readFile(statePath, 'utf8'));
+  if (!Array.isArray(state.records) || !Array.isArray(state.audit_log)) {
+    throw new Error('STATE_INVALID: records and audit_log must be arrays');
+  }
+  if (state.pending_changes === undefined) {
+    state.pending_changes = [];
+  } else if (!Array.isArray(state.pending_changes)) {
+    throw new Error('STATE_INVALID: pending_changes must be an array');
+  }
+  return state;
 }
 
 async function writeState(state) {
@@ -173,15 +196,29 @@ function buildServer() {
       runGoverned('prepare_status_change', mission_id, { record_id, new_status }, async () => {
         assertReadableResource();
         assertWriteAllowed(record_id, new_status);
-        const state = await readState();
-        const record = state.records.find(item => item.id === record_id);
-        if (!record) throw new Error(`RECORD_NOT_FOUND: ${record_id}`);
-        return {
-          mission_id,
-          diff: { record_id, field: 'status', before: record.status, after: new_status },
-          change_token: changeToken(mission_id, record_id, record.status, new_status),
-          applied: false,
-        };
+        return withStateLock(async () => {
+          const state = await readState();
+          const record = state.records.find(item => item.id === record_id);
+          if (!record) throw new Error(`RECORD_NOT_FOUND: ${record_id}`);
+          const changeToken = randomBytes(32).toString('hex');
+          const issuedAt = Date.now();
+          state.pending_changes.push({
+            mission_id,
+            record_id,
+            before: record.status,
+            after: new_status,
+            token_digest: digest(changeToken),
+            issued_at: new Date(issuedAt).toISOString(),
+            expires_at: new Date(issuedAt + pendingChangeTtlMs).toISOString(),
+          });
+          await writeState(state);
+          return {
+            mission_id,
+            diff: { record_id, field: 'status', before: record.status, after: new_status },
+            change_token: changeToken,
+            applied: false,
+          };
+        });
       }),
   );
 
@@ -205,11 +242,24 @@ function buildServer() {
           const state = await readState();
           const record = state.records.find(item => item.id === record_id);
           if (!record) throw new Error(`RECORD_NOT_FOUND: ${record_id}`);
-          const expectedToken = changeToken(mission_id, record_id, record.status, new_status);
-          if (change_token !== expectedToken) {
-            throw new Error('AUTHORITY_DENIED: change_token does not match current state and requested change');
+          const pending = state.pending_changes.find(
+            item => item.mission_id === mission_id
+              && item.record_id === record_id
+              && item.before === record.status
+              && item.after === new_status
+              && secureEquals(item.token_digest, digest(change_token)),
+          );
+          if (!pending) {
+            throw new Error('AUTHORITY_DENIED: change_token was not issued for the current state and requested change');
+          }
+          const tokenExpiresAt = Date.parse(pending.expires_at);
+          if (!Number.isFinite(tokenExpiresAt) || Date.now() >= tokenExpiresAt) {
+            throw new Error('AUTHORITY_DENIED: change_token is invalid or expired');
           }
           const before = record.status;
+          state.pending_changes = state.pending_changes.filter(
+            item => item.mission_id !== mission_id || item.record_id !== record_id,
+          );
           record.status = new_status;
           const actionId = randomUUID();
           state.audit_log.push({
@@ -255,6 +305,21 @@ await ensureState();
 const app = createMcpExpressApp({ host: '0.0.0.0' });
 app.get('/healthz', (_request, response) => response.json({ status: 'ok', service: 'governed-operations-mcp' }));
 app.post('/mcp', async (request, response) => {
+  const authorization = request.get('authorization') ?? '';
+  const claimedIdentity = request.get('x-agent-identity') ?? '';
+  if (!secureEquals(authorization, `Bearer ${mcpAuthToken}`) || claimedIdentity !== authority.agent_identity) {
+    await recordAttemptBestEffort(
+      'mcp_authenticate',
+      authority.mission_id,
+      { claimed_identity: claimedIdentity || null },
+      'blocked',
+    );
+    response
+      .status(401)
+      .set('WWW-Authenticate', 'Bearer')
+      .json({ jsonrpc: '2.0', error: { code: -32001, message: 'Unauthorized' }, id: null });
+    return;
+  }
   const server = buildServer();
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   response.on('close', () => {

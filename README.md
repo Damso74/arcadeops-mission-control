@@ -82,14 +82,17 @@ TRUEFORGE_PROVIDER_TYPE=anthropic
 TRUEFORGE_MODEL_ID=claude-sonnet-5
 TRUEFORGE_MODEL_NAME=Claude Sonnet 5
 TRUEFORGE_MODEL_API_KEY=
+TRUEFORGE_MCP_AUTH_TOKEN=
 DAYTONA_API_KEY=
 ```
+
+Generate `TRUEFORGE_MCP_AUTH_TOKEN` locally with `python -c "import secrets; print(secrets.token_urlsafe(32))"` and paste it only into the ignored file. TrueForge stores it as a redacted MCP authorization header; the MCP container requires the same value and also validates the Authority Contract identity header.
 
 ### 3. Start and configure the runtime
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\runner\resume_requalification.ps1 -Configure
-docker compose -f compose.mcp.yml up -d --build
+docker compose --env-file .env.requalification -f compose.mcp.yml up -d --build
 python runner/configure_governed_pivot.py
 python runner/configure_submission_agent.py
 ```
@@ -138,12 +141,16 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 ## Qodo Code Review Evidence
 
-**Gate not yet satisfied.** The complete representative change is public in [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1). Before submission, add:
+The complete representative change is public in [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1). Qodo's [initial agentic review](https://github.com/Damso74/arcadeops-mission-control/pull/1#pullrequestreview-5017758934) reported six findings: three high, two medium and one low.
 
-- what Qodo found and what was fixed or intentionally dismissed;
-- evidence of the follow-up Qodo review against the final code.
+- predictable and replayable change tokens: replaced with random, persisted, expiring, single-use tokens;
+- invalid contract expiry fail-open: malformed dates now deny authority;
+- unenforced agent identity: the MCP boundary now requires a secret bearer plus the contract identity header;
+- hardcoded model evidence: the Verifier receipt now resolves the persisted session agent model;
+- sandbox write not excluded: the receipt requires exactly two direct, literal read-only bridge calls;
+- hardcoded mission evidence: both exporters require one consistent mission observed in calls or responses.
 
-The public `main` branch contains only the initialization commit. PR #1 adds all 54 project files in one reviewable change and must receive Qodo's initial review, remediation, and follow-up review before a human merge.
+The remediation also correlates native approval, human Allow and the executed write by the same `tool_call_id`. Its local gates are 15 MCP black-box tests, 12 Python workflow tests, a real persisted GO_PIVOT receipt re-export, and zero npm production vulnerabilities. The gate remains open until Qodo completes a follow-up review of the remediation and a human merges PR #1.
 
 ## Publication status and disclosure
 

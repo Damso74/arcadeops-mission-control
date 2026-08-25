@@ -6,7 +6,8 @@ Use only the fictional records `case-101` and `case-102`. Never display credenti
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\runner\resume_requalification.ps1
-docker compose -f compose.mcp.yml up -d --build
+docker compose --env-file .env.requalification -f compose.mcp.yml up -d --build
+python runner/configure_governed_pivot.py
 python runner/configure_submission_agent.py
 python -m unittest discover -s runner -p "test_*.py" -v
 npm --prefix mcp_server test

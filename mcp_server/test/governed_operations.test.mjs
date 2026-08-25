@@ -4,6 +4,7 @@
 // through the MCP Streamable HTTP endpoint.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -22,11 +23,13 @@ const shippedAuthorityPath = resolve(packageDirectory, 'authority_contract.json'
 const STARTUP_TIMEOUT_MS = 20_000;
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 const EXPECTED_TOOLS = ['apply_status_change', 'export_evidence', 'inspect_records', 'prepare_status_change'];
+const TEST_AUTH_TOKEN = 'test-only-token-'.padEnd(64, 'x');
+const TEST_AGENT_IDENTITY = 'arcadeops-governed-operator';
 
 async function startServer(environment) {
   const child = spawn(process.execPath, [serverPath], {
     cwd: packageDirectory,
-    env: { ...process.env, PORT: '0', ...environment },
+    env: { ...process.env, PORT: '0', MCP_AUTH_TOKEN: TEST_AUTH_TOKEN, ...environment },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stdout.setEncoding('utf8');
@@ -107,7 +110,14 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
     baseUrl = `http://127.0.0.1:${started.port}`;
 
     client = new Client({ name: 'trueforge-blackbox-test', version: '1.0.0' });
-    await client.connect(new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`)));
+    await client.connect(new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
+      requestInit: {
+        headers: {
+          Authorization: `Bearer ${TEST_AUTH_TOKEN}`,
+          'X-Agent-Identity': TEST_AGENT_IDENTITY,
+        },
+      },
+    }));
   });
 
   after(async () => {
@@ -151,6 +161,30 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
     assert.deepEqual(await response.json(), { status: 'ok', service: 'governed-operations-mcp' });
   });
 
+  it('rejects unauthenticated and misidentified MCP requests before tool execution', async () => {
+    const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
+    const unauthenticated = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+      body,
+    });
+    assert.equal(unauthenticated.status, 401);
+    assert.equal((await unauthenticated.json()).error.message, 'Unauthorized');
+
+    const misidentified = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        Authorization: `Bearer ${TEST_AUTH_TOKEN}`,
+        'X-Agent-Identity': 'another-agent',
+      },
+      body,
+    });
+    assert.equal(misidentified.status, 401);
+    assert.equal((await misidentified.json()).error.message, 'Unauthorized');
+  });
+
   it('discovers exactly the four governed tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map(tool => tool.name).sort();
@@ -175,35 +209,71 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
     assert.equal(records.get('case-102').status, 'verified');
   });
 
-  it('prepares an authorized change on case-101 without mutating state', async () => {
-    const { isError, payload } = await callTool('prepare_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
-    });
-
-    assert.equal(isError, false);
-    assert.equal(payload.applied, false);
-    assert.deepEqual(payload.diff, { record_id: 'case-101', field: 'status', before: 'pending_review', after: 'approved' });
-    assert.match(payload.change_token, /^[0-9a-f]{64}$/);
-    preparedToken = payload.change_token;
-
-    assert.equal((await readRecords()).get('case-101').status, 'pending_review', 'prepare must not write');
-  });
-
-  it('applies the prepared change on case-101 and records before/after evidence', async () => {
+  it('rejects a token forged from public change inputs', async () => {
+    const forgedToken = createHash('sha256')
+      .update(`${missionId}\ncase-101\npending_review\napproved`)
+      .digest('hex');
     const { isError, payload } = await callTool('apply_status_change', {
       mission_id: missionId,
       record_id: 'case-101',
       new_status: 'approved',
-      change_token: preparedToken,
+      change_token: forgedToken,
     });
 
-    assert.equal(isError, false);
-    assert.equal(payload.applied, true);
-    assert.equal(payload.before, 'pending_review');
-    assert.equal(payload.after, 'approved');
-    assert.ok(payload.action_id);
+    assert.equal(isError, true);
+    assert.match(payload.error, /^AUTHORITY_DENIED: change_token/);
+    assert.equal((await readRecords()).get('case-101').status, 'pending_review');
+  });
+
+  it('prepares independent authorized tokens without mutating record state', async () => {
+    const first = await callTool('prepare_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'approved',
+    });
+    const second = await callTool('prepare_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'approved',
+    });
+
+    assert.equal(first.isError, false);
+    assert.equal(second.isError, false);
+    assert.equal(first.payload.applied, false);
+    assert.deepEqual(first.payload.diff, { record_id: 'case-101', field: 'status', before: 'pending_review', after: 'approved' });
+    assert.match(first.payload.change_token, /^[0-9a-f]{64}$/);
+    assert.match(second.payload.change_token, /^[0-9a-f]{64}$/);
+    assert.notEqual(first.payload.change_token, second.payload.change_token);
+    preparedToken = first.payload.change_token;
+
+    assert.equal((await readRecords()).get('case-101').status, 'pending_review', 'prepare must not write');
+  });
+
+  it('executes exactly one of two concurrent applications of the same prepared token', async () => {
+    const results = await Promise.all([
+      callTool('apply_status_change', {
+        mission_id: missionId,
+        record_id: 'case-101',
+        new_status: 'approved',
+        change_token: preparedToken,
+      }),
+      callTool('apply_status_change', {
+        mission_id: missionId,
+        record_id: 'case-101',
+        new_status: 'approved',
+        change_token: preparedToken,
+      }),
+    ]);
+    const successful = results.find(result => !result.isError);
+    const blocked = results.find(result => result.isError);
+
+    assert.ok(successful);
+    assert.ok(blocked);
+    assert.match(blocked.payload.error, /^AUTHORITY_DENIED: change_token/);
+    assert.equal(successful.payload.applied, true);
+    assert.equal(successful.payload.before, 'pending_review');
+    assert.equal(successful.payload.after, 'approved');
+    assert.ok(successful.payload.action_id);
 
     assert.equal((await readRecords()).get('case-101').status, 'approved');
 
@@ -213,7 +283,7 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
       record_id: 'case-101',
       before: 'pending_review',
       after: 'approved',
-      action_id: payload.action_id,
+      action_id: successful.payload.action_id,
     });
   });
 
@@ -227,6 +297,44 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
 
     assert.equal(isError, true);
     assert.match(payload.error, /^AUTHORITY_DENIED: change_token/);
+    assert.equal((await readRecords()).get('case-101').status, 'approved');
+  });
+
+  it('keeps a consumed token invalid after the record cycles back to its original state', async () => {
+    const outward = await callTool('prepare_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'needs_followup',
+    });
+    assert.equal(outward.isError, false);
+    assert.equal((await callTool('apply_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'needs_followup',
+      change_token: outward.payload.change_token,
+    })).isError, false);
+
+    const returning = await callTool('prepare_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'approved',
+    });
+    assert.equal(returning.isError, false);
+    assert.equal((await callTool('apply_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'approved',
+      change_token: returning.payload.change_token,
+    })).isError, false);
+
+    const replay = await callTool('apply_status_change', {
+      mission_id: missionId,
+      record_id: 'case-101',
+      new_status: 'needs_followup',
+      change_token: outward.payload.change_token,
+    });
+    assert.equal(replay.isError, true);
+    assert.match(replay.payload.error, /^AUTHORITY_DENIED: change_token/);
     assert.equal((await readRecords()).get('case-101').status, 'approved');
   });
 
@@ -313,5 +421,55 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
     assert.equal(countBlockedPrepares(logAfter), countBlockedPrepares(logBefore) + 3, 'no refusal may be lost under concurrency');
     assert.equal(countAllowedInspections(logAfter), countAllowedInspections(logBefore) + 3);
     assert.deepEqual((await readRecords()).get('case-102'), seedRecord('case-102'));
+  });
+
+  it('fails closed when AuthorityContract expires_at is malformed', async () => {
+    const invalidWorkspace = await mkdtemp(join(tmpdir(), 'trueforge-invalid-authority-'));
+    const invalidAuthorityPath = join(invalidWorkspace, 'authority_contract.json');
+    const invalidStatePath = join(invalidWorkspace, 'records.json');
+    await writeFile(
+      invalidAuthorityPath,
+      `${JSON.stringify({ ...authority, expires_at: 'not-a-date' }, null, 2)}\n`,
+      'utf8',
+    );
+    const started = await startServer({ STATE_PATH: invalidStatePath, AUTHORITY_PATH: invalidAuthorityPath });
+    const invalidClient = new Client({ name: 'invalid-authority-test', version: '1.0.0' });
+    try {
+      await invalidClient.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${started.port}/mcp`), {
+        requestInit: {
+          headers: {
+            Authorization: `Bearer ${TEST_AUTH_TOKEN}`,
+            'X-Agent-Identity': TEST_AGENT_IDENTITY,
+          },
+        },
+      }));
+      const result = await invalidClient.callTool({ name: 'inspect_records', arguments: { mission_id: missionId } });
+      const textPart = result.content?.find(part => part.type === 'text');
+      assert.equal(result.isError, true);
+      assert.equal(JSON.parse(textPart.text).error, 'AUTHORITY_DENIED: AuthorityContract expires_at is invalid');
+    } finally {
+      await invalidClient.close();
+      await stopServer(started.child);
+      await rm(invalidWorkspace, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to start when the MCP bearer secret is absent', async () => {
+    const missingSecretWorkspace = await mkdtemp(join(tmpdir(), 'trueforge-missing-secret-'));
+    const missingSecretAuthorityPath = join(missingSecretWorkspace, 'authority_contract.json');
+    const missingSecretStatePath = join(missingSecretWorkspace, 'records.json');
+    await writeFile(missingSecretAuthorityPath, `${JSON.stringify(authority, null, 2)}\n`, 'utf8');
+    try {
+      await assert.rejects(
+        startServer({
+          STATE_PATH: missingSecretStatePath,
+          AUTHORITY_PATH: missingSecretAuthorityPath,
+          MCP_AUTH_TOKEN: '',
+        }),
+        /MCP_AUTH_TOKEN must be set/,
+      );
+    } finally {
+      await rm(missingSecretWorkspace, { recursive: true, force: true });
+    }
   });
 });
