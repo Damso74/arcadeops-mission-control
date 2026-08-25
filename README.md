@@ -25,7 +25,7 @@ All records are fictional. No ArcadeOps production system, customer account, or 
 | Strict integrated Evidence Receipt | 22/22 persisted checks in session `01m0w4epkt6803zxs2awnhgz8s` | PASS |
 | Human-readable Evidence Console | Receipt-backed, responsive, and fail-closed | PASS |
 | Public repository and complete submission PRs | [Repository](https://github.com/Damso74/arcadeops-mission-control), [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1), and [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) published | PASS |
-| Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 resolved; [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2): 8/8 findings from two passes remediated | PASS |
+| Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 resolved; [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2): 11/11 findings from three passes remediated | PASS |
 | Final three-minute video | 169-second, 1280×720 final render verified locally | PASS — upload pending |
 
 The strict exporter produced `SUBMISSION_ACCEPTANCE_PASS` for persisted session `01m0w4epkt6803zxs2awnhgz8s`. It validated all 22 required links and still fails closed when the degraded precondition, Daytona, read-only sandbox validation, the Verifier, correlated human approval, the authorized write, or the recovered postcondition is absent.
@@ -161,7 +161,7 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 **Gate satisfied on PR #1.** Qodo found six issues: three high, two medium, and one low. Commit `0adf7f1` replaced forgeable deterministic tokens with random single-use prepared tokens, added fail-closed expiry and caller identity enforcement, derived receipt identities from persisted evidence, prohibited sandbox writes, derived the mission id, and correlated approval, Allow, and execution by tool-call id. Qodo's automatic follow-up against that commit reports **0 bugs** and marks all six findings resolved.
 
-The PR remains intentionally unmerged until the participant performs the required human review and merge. [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) is already open as a stacked PR and contains the Safe Rollback, strict Receipt, and Evidence Console. Across two PR #2 passes, Qodo found eight issues; all eight are covered by the current remediation and adversarial tests.
+The PR remains intentionally unmerged until the participant performs the required human review and merge. [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) is already open as a stacked PR and contains the Safe Rollback, strict Receipt, and Evidence Console. Across three PR #2 passes, Qodo found eleven issues; all eleven are covered by the current remediation and adversarial tests.
 
 ## Publication status and disclosure
 

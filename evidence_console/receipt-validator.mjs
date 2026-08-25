@@ -115,6 +115,11 @@ export function validateReceipt(receipt) {
     && receipt.verifier_tool_calls.every(call => call.tool !== 'execute_rollback'),
     'Verifier did not perform exactly the two read-only MCP calls',
   );
+  requireThat(
+    receipt.verifier_tool_calls.every(call => isNonEmptyString(call.tool_call_id))
+    && new Set(receipt.verifier_tool_calls.map(call => call.tool_call_id)).size === 2,
+    'Verifier calls must have two distinct persisted identities',
+  );
   const verifierResponseTimes = receipt.verifier_tool_calls.map(call => requireTimestamp(call.responded_at, 'Verifier response'));
 
   requireThat(Array.isArray(receipt.sandbox_references) && receipt.sandbox_references.length > 0, 'sandbox evidence is missing');
@@ -172,7 +177,15 @@ export function validateReceipt(receipt) {
     'approval, decision, write attempt, and executed write are not correlated',
   );
   requireThat(decision.decision === 'allow' && decision.actor === 'human_via_trueforge_ui', 'human Allow evidence is missing');
-  requireThat(write.tool === 'execute_rollback' && writeCall.tool === 'execute_rollback', 'write tool is not execute_rollback');
+  requireThat(
+    [write, correlatedWrite, writeCall].every(call => (
+      call.tool === 'execute_rollback'
+      && call.server === 'governed-operations'
+      && call.tool_type === 'mcp'
+      && call.transport_tool === 'execute_rollback'
+    )),
+    'write did not use the governed MCP transport',
+  );
   requireThat(
     write.mission_id === receipt.mission_id
     && correlatedWrite.mission_id === receipt.mission_id
@@ -193,12 +206,7 @@ export function validateReceipt(receipt) {
   requireThat(response.after?.status === 'healthy', 'write post-state is not healthy');
   requireThat(isMetric(response.before.error_rate_percent) && isMetric(response.after.error_rate_percent), 'write metrics are missing');
   requireThat(
-    correlatedWrite.tool === 'execute_rollback'
-    && correlatedWrite.response?.action_id === response.action_id
-    && correlatedWrite.response?.incident_id === response.incident_id
-    && correlatedWrite.response?.service_id === response.service_id
-    && correlatedWrite.response?.before?.deployed_version === response.before.deployed_version
-    && correlatedWrite.response?.after?.deployed_version === response.after.deployed_version,
+    JSON.stringify(correlatedWrite.response) === JSON.stringify(response),
     'approval-correlated write payload does not match the executed write',
   );
 
