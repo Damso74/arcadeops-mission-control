@@ -1,0 +1,50 @@
+{
+  "$comment": "Gabarit de configuration du spike. Copier en config/trueforge.spike.json (ignoré par Git). NE JAMAIS écrire de secret ici : uniquement des NOMS de variables d'environnement.",
+  "spike_schema_version": "0.1.0-draft",
+
+  "auth": {
+    "mode": "env",
+    "api_key_env_var": "TRUEFORGE_API_KEY",
+    "$unknown": "U9 — le nom réel de la variable doit être relevé dans la doc officielle. Le runner ne lit que la PRÉSENCE de la variable, jamais sa valeur, et ne la journalise jamais."
+  },
+
+  "endpoint": {
+    "base_url": null,
+    "$unknown": "U1/U10 — laisser null tant que la surface publique (SDK / CLI / HTTP) n'est pas confirmée."
+  },
+
+  "agent": {
+    "name": "trueforge-spike-agent",
+    "model": null,
+    "$unknown": "U2 — identifiant de modèle et point d'entrée de création d'agent à confirmer."
+  },
+
+  "sandbox": {
+    "enabled": true,
+    "profile": null,
+    "$unknown": "U4 — nom et sémantique du profil de sandbox à confirmer."
+  },
+
+  "approval": {
+    "mode": "trueforge-native",
+    "$modes": {
+      "trueforge-native": "SEUL mode valide pour CP4. Approbation émise par un humain depuis une surface TrueForge.",
+      "local-file": "FALLBACK de diagnostic. Sert uniquement à instrumenter la reprise (S5) en isolation. NE VALIDE PAS CP4."
+    },
+    "local_file_gate": {
+      "request_path": "evidence/approval_request.json",
+      "grant_path": "evidence/approval_grant.json"
+    },
+    "$unknown": "U5/U6 — surface d'approbation humaine et sémantique de reprise à confirmer."
+  },
+
+  "evidence": {
+    "output_dir": "evidence",
+    "$unknown": "U8 — format d'export officiel à confirmer."
+  },
+
+  "limits": {
+    "approval_wait_seconds": 900,
+    "hard_deadline_local": "2026-08-24T12:37:42+02:00"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "mission_id": "TF-MISSION-20260824-001",
+  "objective": "Change case-101.status only after independent verification, isolated code validation, and native human approval.",
+  "target": {
+    "record_id": "case-101",
+    "field": "status",
+    "requested_value": "approved"
+  },
+  "required_flow": [
+    "inspect case-101 through the governed-operations MCP server",
+    "delegate exactly one read-only dynamic sub-agent named Verifier",
+    "prepare the state-bound change token through MCP",
+    "generate and run a fail-closed Python validator with TrueForge sandbox exec; the code must call inspect_records and prepare_status_change through the sandbox mcp_client bridge",
+    "require the exact marker SANDBOX_VALIDATION_PASS",
+    "call apply_status_change and let TrueForge pause for native human approval",
+    "export persisted evidence after the decision"
+  ],
+  "sandbox_validation_rules": {
+    "mission_id": "TF-MISSION-20260824-001",
+    "record_id": "case-101",
+    "field": "status",
+    "allowed_values": ["approved", "needs_followup"],
+    "must_match_current_before_state": true,
+    "change_token_must_be_non_empty": true
+  },
+  "forbidden": [
+    "Verifier calling apply_status_change",
+    "writing before SANDBOX_VALIDATION_PASS",
+    "bypassing TrueForge native approval",
+    "claiming a sandbox result that is not present in persisted events"
+  ]
+}

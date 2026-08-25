@@ -1,0 +1,15 @@
+{
+  "name": "trueforge-governed-operations-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/governed_operations.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "express": "5.1.0",
+    "zod": "4.4.3"
+  }
+}

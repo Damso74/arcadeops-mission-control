@@ -1,0 +1,19 @@
+{
+  "records": [
+    {
+      "id": "case-101",
+      "subject": "Demo onboarding review",
+      "status": "pending_review",
+      "risk": "low",
+      "fictional": true
+    },
+    {
+      "id": "case-102",
+      "subject": "Demo access recertification",
+      "status": "verified",
+      "risk": "medium",
+      "fictional": true
+    }
+  ],
+  "audit_log": []
+}

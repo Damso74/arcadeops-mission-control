@@ -1,0 +1,7 @@
+{
+  "environment": "production",
+  "deployment": {
+    "requires_human_approval": false,
+    "artifact": "deliverables/fix.patch"
+  }
+}

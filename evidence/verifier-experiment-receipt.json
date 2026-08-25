@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "receipt_kind": "trueforge-dynamic-verifier-experiment",
+  "generated_at": "2026-08-24T22:31:02.071234Z",
+  "session_id": "01m0ty0hgxxe6fywrgbjzbjdkg",
+  "turn_id": "01m0ty0hktnrt0t603ra7jv80k.sm0s40",
+  "agent_name": "arcadeops-governed-operator-verifier-v1",
+  "model": "anthropic/claude-sonnet-5",
+  "subagent_events": [
+    {
+      "event_id": "01m0ty1ra09gng5j9f30w8escf",
+      "thread_id": "a15ae8a6-ebe0-4050-9db6-e554c1e9213d",
+      "name": "Verifier",
+      "type": "dynamic",
+      "parent": {
+        "thread_id": "main",
+        "tool_call_id": "toolu_017Vj55q6SoV1976c9h1WZuc"
+      },
+      "created_at": "2026-08-24T22:25:25.312Z"
+    }
+  ],
+  "verifier_mcp_calls": [
+    {
+      "thread_id": "a15ae8a6-ebe0-4050-9db6-e554c1e9213d",
+      "tool_call_id": "toolu_01J3VpJEaNL61K3K5hFvx9A8",
+      "tool": "inspect_records",
+      "tool_type": "mcp",
+      "server": "governed-operations",
+      "transport_tool": "call_tool",
+      "created_at": "2026-08-24T22:25:36.601Z"
+    },
+    {
+      "thread_id": "a15ae8a6-ebe0-4050-9db6-e554c1e9213d",
+      "tool_call_id": "toolu_01RpZwj2tPzSvz6HvTNay4YW",
+      "tool": "prepare_status_change",
+      "tool_type": "mcp",
+      "server": "governed-operations",
+      "transport_tool": "call_tool",
+      "created_at": "2026-08-24T22:25:36.601Z"
+    }
+  ],
+  "write_tool_calls": [],
+  "verification_results": {
+    "turn_done": true,
+    "exactly_one_dynamic_subagent": true,
+    "verifier_named_correctly": true,
+    "verifier_used_real_mcp": true,
+    "no_write_tool_attempted": true
+  },
+  "final_status": "VERIFIER_EXPERIMENT_PASS",
+  "limitations": [
+    "Daytona was not configured, so this receipt does not claim sandbox execution.",
+    "This isolated agent does not replace the frozen submission-go-pivot agent."
+  ]
+}

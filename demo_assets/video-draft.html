@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>ArcadeOps Mission Control — Demo Draft</title>
+<style>
+  body { margin: 0; background: #090d19; color: #eef2ff; font: 16px system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; }
+  main { display: grid; gap: 12px; justify-items: center; }
+  canvas { width: min(96vw, 1280px); aspect-ratio: 16/9; background: #11182a; box-shadow: 0 24px 80px #0009; }
+  button { border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 700; cursor: pointer; }
+  #status { color: #a5b4fc; }
+</style>
+<main>
+  <canvas id="stage" width="1280" height="720"></canvas>
+  <audio id="narration" src="narration-draft.wav" preload="auto"></audio>
+  <button id="record" disabled>Record narrated WebM</button>
+  <div id="status">Loading local assets…</div>
+</main>
+<script>
+const canvas = document.querySelector('#stage');
+const ctx = canvas.getContext('2d');
+const audio = document.querySelector('#narration');
+const button = document.querySelector('#record');
+const status = document.querySelector('#status');
+const imageSources = [
+  '02-human-deny-allow.png',
+  '03-human-allow.png',
+  '02-deny-allow.png',
+  '01-verifier.png'
+];
+const images = imageSources.map(src => { const image = new Image(); image.src = src; return image; });
+
+function roundedRect(x, y, w, h, radius) {
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.fill();
+}
+function text(lines, x, y, size, color = '#eef2ff', weight = 600, lineHeight = 1.22) {
+  ctx.fillStyle = color; ctx.font = `${weight} ${size}px system-ui`;
+  lines.forEach((line, index) => ctx.fillText(line, x, y + index * size * lineHeight));
+}
+function drawScreenshot(image) {
+  const margin = 66, top = 132, maxW = 1148, maxH = 492;
+  const scale = Math.min(maxW / image.naturalWidth, maxH / image.naturalHeight);
+  const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
+  ctx.fillStyle = '#ffffff'; roundedRect((1280 - width) / 2 - 8, top - 8, width + 16, height + 16, 14);
+  ctx.drawImage(image, (1280 - width) / 2, top, width, height);
+}
+function draw() {
+  const duration = Number.isFinite(audio.duration) ? audio.duration : 180;
+  const t = audio.currentTime || 0;
+  ctx.fillStyle = '#090d19'; ctx.fillRect(0, 0, 1280, 720);
+  const gradient = ctx.createLinearGradient(0, 0, 1280, 720);
+  gradient.addColorStop(0, '#312e81'); gradient.addColorStop(1, '#0f172a');
+  ctx.globalAlpha = 0.7; ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1280, 720); ctx.globalAlpha = 1;
+  text(['ARCADEOPS MISSION CONTROL'], 66, 62, 24, '#a5b4fc', 800);
+
+  if (t < duration * 0.12) {
+    text(['Approval-Gated Operations'], 66, 252, 60, '#ffffff', 800);
+    text(['Delegate work to AI agents', 'without delegating unlimited authority.'], 70, 338, 31, '#c7d2fe', 500, 1.35);
+    text(['TRUEFORGE · REAL MCP TOOLS · HUMAN APPROVAL · EVIDENCE'], 70, 492, 20, '#93c5fd', 700);
+  } else if (t < duration * 0.24) {
+    text(['Executable Authority Contract'], 66, 126, 42, '#ffffff', 800);
+    ctx.fillStyle = '#111827cc'; roundedRect(66, 172, 1148, 420, 20);
+    text(['Mission: TF-MISSION-20260824-001', 'Allowed tools: inspect · prepare · apply · export', 'Writable scope: case-101.status only', 'Approval required: apply_status_change', 'Forbidden: delete · identity changes · external network', 'Every attempt and state transition must be evidenced'], 112, 235, 27, '#e0e7ff', 600, 1.6);
+  } else if (t < duration * 0.43) {
+    text(['1 · TrueForge pauses. Human chooses DENY.'], 66, 112, 35, '#ffffff', 800);
+    drawScreenshot(images[0]);
+  } else if (t < duration * 0.60) {
+    text(['2 · Same session resumes after ALLOW.'], 66, 112, 35, '#ffffff', 800);
+    drawScreenshot(images[1]);
+  } else if (t < duration * 0.73) {
+    text(['3 · Out-of-authority action is blocked.'], 66, 112, 35, '#ffffff', 800);
+    drawScreenshot(images[2]);
+  } else if (t < duration * 0.90) {
+    text(['4 · One real dynamic subagent: Verifier.'], 66, 112, 35, '#ffffff', 800);
+    drawScreenshot(images[3]);
+  } else {
+    text(['Evidence, not promises.'], 66, 212, 58, '#ffffff', 800);
+    text(['Persisted model turn · Deny + Allow · one executed write', 'Authority denial · dynamic Verifier · restart recovery', 'Known limitation: Daytona sandbox not configured'], 70, 310, 29, '#c7d2fe', 550, 1.55);
+    text(['TRUEFORGE RUNS THE AGENT. ARCADEOPS GOVERNS THE AUTHORITY.'], 70, 520, 22, '#93c5fd', 800);
+  }
+  ctx.fillStyle = '#312e81'; ctx.fillRect(0, 708, 1280, 12);
+  ctx.fillStyle = '#818cf8'; ctx.fillRect(0, 708, 1280 * Math.min(1, t / duration), 12);
+  requestAnimationFrame(draw);
+}
+
+Promise.all([
+  new Promise(resolve => audio.addEventListener('loadedmetadata', resolve, { once: true })),
+  ...images.map(image => new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; }))
+]).then(() => {
+  button.disabled = false;
+  status.textContent = `Ready — narration ${Math.round(audio.duration)} seconds`;
+}).catch(error => status.textContent = `Asset error: ${error}`);
+
+button.addEventListener('click', async () => {
+  button.disabled = true; audio.currentTime = 0;
+  const canvasStream = canvas.captureStream(30);
+  const audioStream = audio.captureStream();
+  const stream = new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+  const chunks = [];
+  recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+    link.download = 'arcadeops-trueforge-demo-draft.webm'; link.textContent = 'Download recorded demo';
+    status.replaceChildren(link); link.click();
+  };
+  audio.onended = () => recorder.stop();
+  recorder.start(1000); await audio.play();
+  status.textContent = 'Recording in real time…';
+});
+draw();
+</script>
+</html>
