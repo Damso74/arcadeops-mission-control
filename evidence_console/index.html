@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#11100e">
+    <meta name="description" content="A human-readable proof of one approval-gated AI operation executed by TrueForge.">
+    <title>ArcadeOps Mission Control</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" type="module"></script>
+  </head>
+  <body>
+    <main class="shell" id="console-root" data-evidence-status="loading" aria-labelledby="page-title">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="ArcadeOps Mission Control home">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span>ArcadeOps</span>
+        </a>
+        <div class="evidence-state" id="evidence-state" role="status">
+          <span class="state-dot" aria-hidden="true"></span>
+          <span>Checking evidence</span>
+        </div>
+      </header>
+
+      <section class="hero" id="top">
+        <div class="eyebrow" id="hero-eyebrow">Verifying persisted evidence</div>
+        <h1 id="page-title"><span id="headline-primary">Checking evidence.</span><br><span id="headline-secondary">Please wait.</span></h1>
+        <p class="lede" id="hero-lede">Recovery claims stay hidden until the complete authority chain has been validated.</p>
+        <div class="hero-actions success-only">
+          <a class="primary-action" href="#proof">See the proof <span aria-hidden="true">↓</span></a>
+          <span class="plain-trust">No production access. No hidden writes.</span>
+        </div>
+      </section>
+
+      <section class="outcome-card success-only" aria-label="Recovery result">
+        <div class="outcome-copy">
+          <span class="section-label">Recovery result</span>
+          <div class="service-line">
+            <span class="health-icon" aria-hidden="true">✓</span>
+            <div>
+              <strong id="service-name">checkout-api</strong>
+              <span id="incident-name">INC-2026-042</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric">
+          <span>Version</span>
+          <strong><s id="from-version">v42</s> <b aria-hidden="true">→</b> <em id="to-version">v41</em></strong>
+        </div>
+        <div class="metric">
+          <span>Error rate</span>
+          <strong><s id="before-rate">18.4%</s> <b aria-hidden="true">→</b> <em id="after-rate">0.7%</em></strong>
+        </div>
+        <div class="metric">
+          <span>Status</span>
+          <strong class="healthy">Healthy</strong>
+        </div>
+      </section>
+
+      <section class="proof success-only" id="proof" aria-labelledby="proof-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-label">One safe path</span>
+            <h2 id="proof-title">Nothing happens off the record.</h2>
+          </div>
+          <p>TrueForge persists the whole chain. ArcadeOps accepts the receipt only when every link is present.</p>
+        </div>
+
+        <ol class="journey" aria-label="Verified operation sequence">
+          <li><span>1</span><div><strong>Inspect</strong><small>Incident observed</small></div></li>
+          <li><span>2</span><div><strong>Verify</strong><small>Independent agent</small></div></li>
+          <li><span>3</span><div><strong>Validate</strong><small>Daytona sandbox</small></div></li>
+          <li class="human-step"><span>4</span><div><strong>Approve</strong><small>Human decision</small></div></li>
+          <li><span>5</span><div><strong>Rollback</strong><small>One governed write</small></div></li>
+          <li><span>6</span><div><strong>Prove</strong><small>Receipt sealed</small></div></li>
+        </ol>
+
+        <div class="trust-strip">
+          <div><strong id="check-count">20</strong><span>checks passed</span></div>
+          <div><strong id="approval-count">1</strong><span>human approval</span></div>
+          <div><strong id="write-count">1</strong><span>governed write</span></div>
+          <div><strong>0</strong><span>scope escapes</span></div>
+        </div>
+
+        <details class="evidence-drawer">
+          <summary>
+            <span>Open technical evidence</span>
+            <small id="proof-summary">Verified from the persisted TrueForge session</small>
+          </summary>
+          <div class="evidence-body">
+            <dl class="evidence-facts">
+              <div><dt>Runtime</dt><dd>TrueForge 0.1.4</dd></div>
+              <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
+              <div><dt>Verifier</dt><dd id="verifier-name">1 independent child agent</dd></div>
+              <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona · isolated</dd></div>
+              <div><dt>Authority</dt><dd id="authority-name">Verified from receipt</dd></div>
+              <div><dt>Decision</dt><dd id="decision-time">Human Allow · correlated</dd></div>
+            </dl>
+            <div class="check-panel">
+              <div class="check-panel-heading">
+                <div><span class="checkmark" aria-hidden="true">✓</span><strong>Receipt accepted</strong></div>
+                <span id="receipt-date">Persisted evidence</span>
+              </div>
+              <ul id="check-list" aria-label="Receipt verification checks"></ul>
+            </div>
+            <div class="evidence-actions">
+              <a id="session-link" class="secondary-action" href="http://127.0.0.1:8791/" target="_blank" rel="noreferrer">Open TrueForge session</a>
+              <a class="text-action" href="../evidence/submission-evidence-receipt.json" target="_blank" rel="noreferrer">View raw receipt</a>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <footer class="success-only">
+        <span>Fictional incident. Real harness evidence.</span>
+        <span>Delegate the work. Never unlimited authority.</span>
+      </footer>
+    </main>
+  </body>
+</html>

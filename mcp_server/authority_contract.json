@@ -1,31 +1,36 @@
 {
-  "mission_id": "TF-MISSION-20260824-001",
-  "agent_identity": "arcadeops-governed-operator",
+  "mission_id": "TF-SAFE-ROLLBACK-001",
+  "agent_identity": "arcadeops-mission-control",
   "allowed_tools": [
-    "inspect_records",
-    "prepare_status_change",
-    "apply_status_change",
+    "inspect_incident",
+    "prepare_rollback",
+    "execute_rollback",
     "export_evidence"
   ],
-  "readable_resources": ["records:demo"],
+  "readable_resources": ["incidents:demo", "services:demo"],
   "write_permissions": [
     {
-      "resource": "records:demo",
-      "record_ids": ["case-101"],
-      "fields": ["status"],
-      "allowed_values": ["approved", "needs_followup"]
+      "resource": "services:demo",
+      "operation": "rollback",
+      "incident_ids": ["INC-2026-042"],
+      "service_ids": ["checkout-api"],
+      "from_versions": ["v42"],
+      "to_versions": ["v41"],
+      "max_writes": 1
     }
   ],
   "forbidden_actions": [
-    "delete_records",
+    "deploy_new_code",
     "modify_identity",
-    "external_network_calls"
+    "external_network_calls",
+    "touch_production"
   ],
-  "approval_required_for": ["apply_status_change"],
+  "approval_required_for": ["execute_rollback"],
   "evidence_requirements": [
     "record every tool attempt",
     "record authority denials",
-    "record before and after state for writes"
+    "record before and after state for writes",
+    "verify the service postcondition after the write"
   ],
   "expires_at": "2026-08-31T20:00:00Z"
 }

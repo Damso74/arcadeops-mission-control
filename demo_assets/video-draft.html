@@ -59,7 +59,7 @@ function draw() {
   } else if (t < duration * 0.24) {
     text(['Executable Authority Contract'], 66, 126, 42, '#ffffff', 800);
     ctx.fillStyle = '#111827cc'; roundedRect(66, 172, 1148, 420, 20);
-    text(['Mission: TF-MISSION-20260824-001', 'Allowed tools: inspect · prepare · apply · export', 'Writable scope: case-101.status only', 'Approval required: apply_status_change', 'Forbidden: delete · identity changes · external network', 'Every attempt and state transition must be evidenced'], 112, 235, 27, '#e0e7ff', 600, 1.6);
+    text(['Mission: TF-SAFE-ROLLBACK-001', 'Allowed tools: inspect · prepare · execute · export', 'Only scope: checkout-api · v42 → v41 · maximum one write', 'Approval required: execute_rollback', 'Forbidden: new deploy · production · external network', 'Recovery must be re-inspected and evidenced'], 112, 235, 27, '#e0e7ff', 600, 1.6);
   } else if (t < duration * 0.43) {
     text(['1 · TrueForge pauses. Human chooses DENY.'], 66, 112, 35, '#ffffff', 800);
     drawScreenshot(images[0]);

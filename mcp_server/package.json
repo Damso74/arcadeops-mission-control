@@ -1,6 +1,6 @@
 {
-  "name": "trueforge-governed-operations-mcp",
-  "version": "0.1.0",
+  "name": "trueforge-safe-rollback-mcp",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {

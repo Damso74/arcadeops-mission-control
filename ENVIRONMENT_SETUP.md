@@ -1,6 +1,6 @@
 # TrueForge submission environment
 
-Current state: the model, MCP, approval, persistence and Verifier are verified. Daytona remains an environmental gate until a real participant-owned credential is configured and the integrated receipt passes.
+Current state: the model, authenticated MCP, Verifier, Daytona sandbox, native human approval, persistence, single rollback and recovered postcondition are verified. The strict integrated receipt passes all 22 checks for session `01m0w4epkt6803zxs2awnhgz8s`.
 
 ## Fresh clone
 
@@ -27,13 +27,13 @@ TRUEFORGE_PROVIDER_BASE_URL=
 TRUEFORGE_MODEL_ID=claude-sonnet-5
 TRUEFORGE_MODEL_NAME=Claude Sonnet 5
 TRUEFORGE_MODEL_API_KEY=
-TRUEFORGE_MCP_AUTH_TOKEN=
+TRUEFORGE_MCP_AUTH_TOKEN=<generate-locally>
 DAYTONA_API_KEY=
 ```
 
-`runner/resume_requalification.ps1` imports the ignored file into the process and writes provider manifests to the local TrueForge Settings API. It reports only presence and validity states.
+Generate `TRUEFORGE_MCP_AUTH_TOKEN` locally with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Store the result only in `.env.requalification`.
 
-Generate the MCP bearer locally with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Store it only as `TRUEFORGE_MCP_AUTH_TOKEN` in `.env.requalification`; never commit or print the real value.
+`runner/resume_requalification.ps1` imports the ignored file into the process and writes provider manifests to the local TrueForge Settings API. It reports only presence and validity states.
 
 ## Start and configure
 

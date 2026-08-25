@@ -1,15 +1,15 @@
 AI agents can operate powerful tools, but access is not authority. ArcadeOps Mission Control delegates the work while keeping the final decision and the permitted scope under explicit control.
 
-TrueForge runs the model, tools, subagents, sandbox, approval checkpoint, and persistent session. This executable Authority Contract independently limits the mission to one fictional record, one field, and two allowed values.
+TrueForge runs the model, tools, subagents, sandbox, approval checkpoint, and persistent session. This executable Authority Contract independently permits one fictional rollback: checkout API from version forty-two to stable version forty-one.
 
-The parent reads the record through a real MCP server, then delegates exactly one read-only Verifier. The child independently inspects the same data and prepares the proposed transition. It cannot call the write tool.
+The parent observes checkout API degraded at eighteen point four percent errors through a real MCP server, then delegates exactly one read-only Verifier. The child independently inspects the incident and prepares the rollback token. It cannot call the write tool.
 
-Next, the agent generates a fail-closed Python validator and executes it in TrueForge's Daytona sandbox. Through TrueForge's MCP bridge, that code reads and prepares the change itself, then checks the mission, target, state, allowed value, and token. A write is forbidden unless the persisted result contains the exact marker SANDBOX VALIDATION PASS.
+Next, the agent generates a fail-closed Python validator and executes it in TrueForge's Daytona sandbox. Through TrueForge's MCP bridge, that code inspects the incident and prepares the rollback itself, then checks the mission, service, versions, error rate, healthy threshold, and token. A write is forbidden unless the persisted result contains the exact marker SANDBOX VALIDATION PASS.
 
-Only then does the agent attempt the write. TrueForge recognizes the MCP write annotation and pauses before execution. The human chooses Allow in the native interface. TrueForge resumes the same turn, and the server performs exactly one authorized state change.
+Only then does the agent attempt the rollback. TrueForge recognizes the MCP write annotation and pauses before execution. The human chooses Allow in the native interface. TrueForge resumes the same turn, performs exactly one authorized rollback, and inspects the incident again to prove version forty-one, healthy status, and zero point seven percent errors.
 
-The controls fail closed. A recorded Deny left the state untouched. Human approval cannot expand the contract either: an attempted change to case one zero two was rejected as outside authority.
+The controls fail closed. A stale token cannot be replayed, concurrent attempts produce only one write, and even human approval cannot expand the contract to another incident or service.
 
-The receipt is generated from TrueForge's persisted public APIs. It verifies the model, Verifier, Daytona sandbox, generated-code result, approval, ordering, and single write. If any proof is missing, the exporter fails.
+The console reads a receipt generated from TrueForge's persisted public APIs. Twenty-two checks bind the model, Verifier, Daytona sandbox, human approval, single rollback, and recovered service. If one proof is missing, both the exporter and this success state fail closed.
 
 TrueForge provides the harness. ArcadeOps adds enforceable authority and verifiable evidence. Delegate the work, never unlimited authority.

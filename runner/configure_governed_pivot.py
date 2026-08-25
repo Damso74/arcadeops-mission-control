@@ -17,7 +17,7 @@ from urllib.request import Request, urlopen
 
 
 MCP_NAME = "governed-operations"
-AGENT_NAME = "arcadeops-governed-operator-v1"
+AGENT_NAME = "arcadeops-safe-rollback-operator-v1"
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -53,7 +53,7 @@ def mcp_manifest(mcp_url: str, auth_token: str | None) -> dict[str, Any]:
         "type": "remote",
         "name": MCP_NAME,
         "url": mcp_url,
-        "description": "Fictional approval-gated operations governed by an executable AuthorityContract.",
+        "description": "Fictional approval-gated incident rollback governed by an executable AuthorityContract.",
         "auth": {
             "type": "header",
             "headers": {
@@ -92,9 +92,9 @@ def agent_manifest(model_name: str) -> dict[str, Any]:
     return {
         "model": {"name": model_name},
         "instructions": (
-            "You are the governed operator for a fictional demo. You must use the governed-operations MCP tools "
-            "and never invent results. For a requested status change, call inspect_records, then "
-            "prepare_status_change, then immediately call apply_status_change with the returned change_token. "
+            "You are the governed operator for a fictional Safe Rollback lab. You must use the governed-operations "
+            "MCP tools and never invent results. For an authorized rollback, call inspect_incident, then "
+            "prepare_rollback, then immediately call execute_rollback with the returned change_token. "
             "Do not ask the user a question yourself: TrueForge owns and enforces the native approval pause before "
             "the write tool executes. Use exactly the mission_id supplied."
         ),
@@ -104,12 +104,12 @@ def agent_manifest(model_name: str) -> dict[str, Any]:
                 "enable_tools": ["@all"],
                 "disable_tools": [],
                 "preload_tools": [
-                    "inspect_records",
-                    "prepare_status_change",
-                    "apply_status_change",
+                    "inspect_incident",
+                    "prepare_rollback",
+                    "execute_rollback",
                     "export_evidence",
                 ],
-                "require_approval_for_tools": ["@write"],
+                "require_approval_for_tools": ["execute_rollback"],
                 "preload": False,
             }
         ],
@@ -133,7 +133,7 @@ def main() -> int:
     parser.add_argument("--model", default="anthropic/claude-sonnet-5")
     parser.add_argument(
         "--mcp-url",
-        default="http://trueforge-governed-mcp-20260824:8765/mcp",
+        default="http://trueforge-safe-rollback-mcp-20260825:8765/mcp",
         help="URL reachable from the TrueForge server container",
     )
     parser.add_argument("--mcp-auth-token", default=local_secret("TRUEFORGE_MCP_AUTH_TOKEN"), help=argparse.SUPPRESS)
@@ -145,7 +145,7 @@ def main() -> int:
 
     discovered = request_json(args.base_url, f"/mcp-servers/{MCP_NAME}/tools").get("data", [])
     tool_names = sorted(tool.get("name") for tool in discovered)
-    expected = sorted(["inspect_records", "prepare_status_change", "apply_status_change", "export_evidence"])
+    expected = sorted(["inspect_incident", "prepare_rollback", "execute_rollback", "export_evidence"])
     if tool_names != expected:
         raise RuntimeError(f"MCP tool discovery mismatch: expected {expected}, got {tool_names}")
 
@@ -167,7 +167,7 @@ def main() -> int:
         "agent_id": saved["id"],
         "agent_name": saved["name"],
         "model": saved["manifest"]["model"]["name"],
-        "native_approval_selector": "@write",
+        "native_approval_selector": "execute_rollback",
         "sandbox_enabled": saved["manifest"]["config"]["sandbox"]["enabled"],
     }, indent=2))
     return 0

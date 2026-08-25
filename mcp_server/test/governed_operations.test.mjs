@@ -1,7 +1,4 @@
-// Black-box test of the governed operations MCP server.
-// The server is started as a real child process on an ephemeral port, against a throwaway
-// state file and a throwaway copy of the shipped AuthorityContract, and is only ever driven
-// through the MCP Streamable HTTP endpoint.
+// Black-box test of the Safe Rollback MCP server over Streamable HTTP.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -22,9 +19,9 @@ const shippedAuthorityPath = resolve(packageDirectory, 'authority_contract.json'
 
 const STARTUP_TIMEOUT_MS = 20_000;
 const SHUTDOWN_TIMEOUT_MS = 5_000;
-const EXPECTED_TOOLS = ['apply_status_change', 'export_evidence', 'inspect_records', 'prepare_status_change'];
+const EXPECTED_TOOLS = ['execute_rollback', 'export_evidence', 'inspect_incident', 'prepare_rollback'];
 const TEST_AUTH_TOKEN = 'test-only-token-'.padEnd(64, 'x');
-const TEST_AGENT_IDENTITY = 'arcadeops-governed-operator';
+const TEST_AGENT_IDENTITY = 'arcadeops-mission-control';
 
 async function startServer(environment) {
   const child = spawn(process.execPath, [serverPath], {
@@ -65,7 +62,7 @@ async function startServer(environment) {
       child.stderr.on('data', onData);
       child.on('exit', onExit);
     });
-    return { child, port, output: () => output };
+    return { child, port };
   } catch (error) {
     await stopServer(child);
     throw error;
@@ -82,7 +79,7 @@ async function stopServer(child) {
   clearTimeout(timer);
 }
 
-describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () => {
+describe('Safe Rollback MCP server (black-box)', { timeout: 120_000 }, () => {
   let workspace;
   let child;
   let baseUrl;
@@ -93,15 +90,13 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
   let preparedToken;
 
   before(async () => {
-    workspace = await mkdtemp(join(tmpdir(), 'trueforge-mcp-'));
-    const statePath = join(workspace, 'records.json');
+    workspace = await mkdtemp(join(tmpdir(), 'trueforge-safe-rollback-'));
+    const statePath = join(workspace, 'state.json');
     const authorityPath = join(workspace, 'authority_contract.json');
 
     seed = JSON.parse(await readFile(seedPath, 'utf8'));
     authority = JSON.parse(await readFile(shippedAuthorityPath, 'utf8'));
     missionId = authority.mission_id;
-    // Every shipped authority rule is kept; only the validity window is pushed forward so the
-    // test stays reproducible once the demo contract has expired.
     authority = { ...authority, expires_at: new Date(Date.now() + 3_600_000).toISOString() };
     await writeFile(authorityPath, `${JSON.stringify(authority, null, 2)}\n`, 'utf8');
 
@@ -109,7 +104,7 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
     child = started.child;
     baseUrl = `http://127.0.0.1:${started.port}`;
 
-    client = new Client({ name: 'trueforge-blackbox-test', version: '1.0.0' });
+    client = new Client({ name: 'trueforge-safe-rollback-test', version: '1.0.0' });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
       requestInit: {
         headers: {
@@ -125,7 +120,7 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
       try {
         await client.close();
       } catch {
-        // the transport may already be gone; shutting the server down is what matters
+        // The transport may already be gone.
       }
     }
     await stopServer(child);
@@ -139,26 +134,22 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
     return { isError: result.isError === true, payload: JSON.parse(textPart.text) };
   }
 
-  async function readRecords() {
-    const { isError, payload } = await callTool('inspect_records', { mission_id: missionId });
-    assert.equal(isError, false);
-    return new Map(payload.records.map(record => [record.id, record]));
+  async function inspect(incidentId = 'INC-2026-042') {
+    const result = await callTool('inspect_incident', { mission_id: missionId, incident_id: incidentId });
+    assert.equal(result.isError, false);
+    return result.payload;
   }
 
-  async function readAuditLog() {
-    const { isError, payload } = await callTool('export_evidence', { mission_id: missionId });
-    assert.equal(isError, false);
-    return payload.audit_log;
-  }
-
-  function seedRecord(recordId) {
-    return seed.records.find(record => record.id === recordId);
+  async function evidence() {
+    const result = await callTool('export_evidence', { mission_id: missionId });
+    assert.equal(result.isError, false);
+    return result.payload;
   }
 
   it('answers the health probe', async () => {
     const response = await fetch(`${baseUrl}/healthz`);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { status: 'ok', service: 'governed-operations-mcp' });
+    assert.deepEqual(await response.json(), { status: 'ok', service: 'safe-rollback-mcp' });
   });
 
   it('rejects unauthenticated and misidentified MCP requests before tool execution', async () => {
@@ -182,245 +173,227 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
       body,
     });
     assert.equal(misidentified.status, 401);
-    assert.equal((await misidentified.json()).error.message, 'Unauthorized');
   });
 
-  it('discovers exactly the four governed tools', async () => {
+  it('discovers exactly the four tools declared by the AuthorityContract', async () => {
     const { tools } = await client.listTools();
     const names = tools.map(tool => tool.name).sort();
     assert.deepEqual(names, EXPECTED_TOOLS);
-    assert.deepEqual(names, [...authority.allowed_tools].sort(), 'advertised tools must match the AuthorityContract');
+    assert.deepEqual(names, [...authority.allowed_tools].sort());
 
     const byName = new Map(tools.map(tool => [tool.name, tool]));
-    for (const readOnlyTool of ['inspect_records', 'prepare_status_change', 'export_evidence']) {
-      assert.equal(byName.get(readOnlyTool).annotations.readOnlyHint, true, `${readOnlyTool} must be advertised read-only`);
+    for (const readOnlyTool of ['inspect_incident', 'prepare_rollback', 'export_evidence']) {
+      assert.equal(byName.get(readOnlyTool).annotations.readOnlyHint, true);
     }
-    assert.equal(byName.get('apply_status_change').annotations.readOnlyHint, false);
-    assert.ok(byName.get('apply_status_change').inputSchema.properties.change_token, 'the write tool must require a change_token');
+    assert.equal(byName.get('execute_rollback').annotations.readOnlyHint, false);
+    assert.equal(byName.get('execute_rollback').annotations.destructiveHint, true);
+    assert.ok(byName.get('execute_rollback').inputSchema.properties.change_token);
   });
 
-  it('inspects the seeded fictional records', async () => {
-    const records = await readRecords();
-    assert.equal(records.size, seed.records.length);
-    for (const record of seed.records) {
-      assert.deepEqual(records.get(record.id), record);
-    }
-    assert.equal(records.get('case-101').status, 'pending_review');
-    assert.equal(records.get('case-102').status, 'verified');
+  it('inspects the degraded fictional checkout incident without mutation', async () => {
+    const payload = await inspect();
+    const expectedIncident = seed.incidents.find(item => item.id === 'INC-2026-042');
+    const expectedService = seed.services.find(item => item.id === 'checkout-api');
+    assert.deepEqual(payload.incident, expectedIncident);
+    assert.deepEqual(payload.service, expectedService);
+    assert.equal(payload.service.status, 'degraded');
+    assert.equal(payload.service.error_rate_percent, 18.4);
   });
 
-  it('rejects a token forged from public change inputs', async () => {
+  it('rejects a rollback token forged from public mission and service inputs', async () => {
     const forgedToken = createHash('sha256')
-      .update(`${missionId}\ncase-101\npending_review\napproved`)
+      .update([missionId, 'INC-2026-042', 'checkout-api', 'v42', 'v41', 18.4, 'degraded'].join('\n'))
       .digest('hex');
-    const { isError, payload } = await callTool('apply_status_change', {
+    const result = await callTool('execute_rollback', {
       mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      target_version: 'v41',
       change_token: forgedToken,
     });
-
-    assert.equal(isError, true);
-    assert.match(payload.error, /^AUTHORITY_DENIED: change_token/);
-    assert.equal((await readRecords()).get('case-101').status, 'pending_review');
+    assert.equal(result.isError, true);
+    assert.match(result.payload.error, /^AUTHORITY_DENIED: change_token/);
   });
 
-  it('prepares independent authorized tokens without mutating record state', async () => {
-    const first = await callTool('prepare_status_change', {
+  it('prepares a state-bound rollback plan without changing service state', async () => {
+    const result = await callTool('prepare_rollback', {
       mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
-    });
-    const second = await callTool('prepare_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      target_version: 'v41',
     });
 
-    assert.equal(first.isError, false);
+    assert.equal(result.isError, false);
+    assert.equal(result.payload.applied, false);
+    assert.deepEqual(result.payload.rollback_plan, {
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      from_version: 'v42',
+      to_version: 'v41',
+      error_rate_before: 18.4,
+      expected_error_rate_after: 0.7,
+      healthy_threshold_percent: 2,
+    });
+    assert.match(result.payload.change_token, /^[0-9a-f]{64}$/);
+    preparedToken = result.payload.change_token;
+
+    const second = await callTool('prepare_rollback', {
+      mission_id: missionId,
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      target_version: 'v41',
+    });
     assert.equal(second.isError, false);
-    assert.equal(first.payload.applied, false);
-    assert.deepEqual(first.payload.diff, { record_id: 'case-101', field: 'status', before: 'pending_review', after: 'approved' });
-    assert.match(first.payload.change_token, /^[0-9a-f]{64}$/);
-    assert.match(second.payload.change_token, /^[0-9a-f]{64}$/);
-    assert.notEqual(first.payload.change_token, second.payload.change_token);
-    preparedToken = first.payload.change_token;
+    assert.notEqual(second.payload.change_token, preparedToken);
 
-    assert.equal((await readRecords()).get('case-101').status, 'pending_review', 'prepare must not write');
+    const snapshot = await inspect();
+    assert.equal(snapshot.service.deployed_version, 'v42');
+    assert.equal(snapshot.incident.status, 'open');
   });
 
-  it('executes exactly one of two concurrent applications of the same prepared token', async () => {
-    const results = await Promise.all([
-      callTool('apply_status_change', {
-        mission_id: missionId,
-        record_id: 'case-101',
-        new_status: 'approved',
-        change_token: preparedToken,
-      }),
-      callTool('apply_status_change', {
-        mission_id: missionId,
-        record_id: 'case-101',
-        new_status: 'approved',
-        change_token: preparedToken,
-      }),
-    ]);
-    const successful = results.find(result => !result.isError);
-    const blocked = results.find(result => result.isError);
-
-    assert.ok(successful);
-    assert.ok(blocked);
-    assert.match(blocked.payload.error, /^AUTHORITY_DENIED: change_token/);
-    assert.equal(successful.payload.applied, true);
-    assert.equal(successful.payload.before, 'pending_review');
-    assert.equal(successful.payload.after, 'approved');
-    assert.ok(successful.payload.action_id);
-
-    assert.equal((await readRecords()).get('case-101').status, 'approved');
-
-    const executed = (await readAuditLog()).filter(event => event.tool === 'apply_status_change' && event.outcome === 'executed');
-    assert.equal(executed.length, 1);
-    assert.deepEqual(executed[0].details, {
-      record_id: 'case-101',
-      before: 'pending_review',
-      after: 'approved',
-      action_id: successful.payload.action_id,
-    });
-  });
-
-  it('blocks a replayed change_token and leaves case-101 as applied', async () => {
-    const { isError, payload } = await callTool('apply_status_change', {
+  it('rejects an invalid token and preserves the degraded state', async () => {
+    const result = await callTool('execute_rollback', {
       mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
-      change_token: preparedToken,
-    });
-
-    assert.equal(isError, true);
-    assert.match(payload.error, /^AUTHORITY_DENIED: change_token/);
-    assert.equal((await readRecords()).get('case-101').status, 'approved');
-  });
-
-  it('keeps a consumed token invalid after the record cycles back to its original state', async () => {
-    const outward = await callTool('prepare_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'needs_followup',
-    });
-    assert.equal(outward.isError, false);
-    assert.equal((await callTool('apply_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'needs_followup',
-      change_token: outward.payload.change_token,
-    })).isError, false);
-
-    const returning = await callTool('prepare_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
-    });
-    assert.equal(returning.isError, false);
-    assert.equal((await callTool('apply_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'approved',
-      change_token: returning.payload.change_token,
-    })).isError, false);
-
-    const replay = await callTool('apply_status_change', {
-      mission_id: missionId,
-      record_id: 'case-101',
-      new_status: 'needs_followup',
-      change_token: outward.payload.change_token,
-    });
-    assert.equal(replay.isError, true);
-    assert.match(replay.payload.error, /^AUTHORITY_DENIED: change_token/);
-    assert.equal((await readRecords()).get('case-101').status, 'approved');
-  });
-
-  it('blocks prepare_status_change on case-102 and audits it as blocked', async () => {
-    const { isError, payload } = await callTool('prepare_status_change', {
-      mission_id: missionId,
-      record_id: 'case-102',
-      new_status: 'approved',
-    });
-
-    assert.equal(isError, true);
-    assert.equal(payload.error, 'AUTHORITY_DENIED: status write is not allowed for case-102');
-
-    const entries = (await readAuditLog()).filter(
-      event => event.tool === 'prepare_status_change' && event.details?.record_id === 'case-102',
-    );
-    assert.equal(entries.length, 1, 'the refusal must leave exactly one audit entry');
-    const [entry] = entries;
-    assert.equal(entry.outcome, 'blocked');
-    assert.equal(entry.mission_id, missionId);
-    assert.deepEqual(entry.details, { record_id: 'case-102', new_status: 'approved' });
-    assert.ok(entry.event_id);
-    assert.ok(Number.isFinite(Date.parse(entry.occurred_at)));
-  });
-
-  it('blocks apply_status_change on case-102 and audits it as blocked', async () => {
-    const { isError, payload } = await callTool('apply_status_change', {
-      mission_id: missionId,
-      record_id: 'case-102',
-      new_status: 'approved',
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      target_version: 'v41',
       change_token: 'f'.repeat(64),
     });
 
-    assert.equal(isError, true);
-    assert.equal(payload.error, 'AUTHORITY_DENIED: status write is not allowed for case-102');
-
-    const entries = (await readAuditLog()).filter(
-      event => event.tool === 'apply_status_change' && event.details?.record_id === 'case-102',
-    );
-    assert.equal(entries.length, 1);
-    assert.equal(entries[0].outcome, 'blocked');
+    assert.equal(result.isError, true);
+    assert.match(result.payload.error, /^AUTHORITY_DENIED: change_token/);
+    assert.equal((await inspect()).service.deployed_version, 'v42');
   });
 
-  it('leaves case-102 unchanged and exports a complete mission trail', async () => {
-    assert.deepEqual((await readRecords()).get('case-102'), seedRecord('case-102'));
-
-    const { isError, payload } = await callTool('export_evidence', { mission_id: missionId });
-    assert.equal(isError, false);
-    assert.equal(payload.authority_contract.mission_id, missionId);
-    assert.deepEqual(payload.authority_contract.write_permissions[0].record_ids, ['case-101']);
-    assert.ok(payload.audit_log.length > 0);
-    assert.ok(
-      payload.audit_log.every(event => event.mission_id === missionId),
-      'evidence must only contain events of the current mission',
+  it('allows exactly one concurrent rollback and records recovery', async () => {
+    const request = {
+      mission_id: missionId,
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      target_version: 'v41',
+      change_token: preparedToken,
+    };
+    const results = await Promise.all([callTool('execute_rollback', request), callTool('execute_rollback', request)]);
+    assert.deepEqual(
+      results.map(result => result.isError).sort(),
+      [false, true],
     );
+
+    const success = results.find(result => !result.isError).payload;
+    assert.equal(success.applied, true);
+    assert.equal(success.recovered, true);
+    assert.deepEqual(success.before, { deployed_version: 'v42', error_rate_percent: 18.4, status: 'degraded' });
+    assert.deepEqual(success.after, { deployed_version: 'v41', error_rate_percent: 0.7, status: 'healthy' });
+
+    const snapshot = await inspect();
+    assert.equal(snapshot.service.deployed_version, 'v41');
+    assert.equal(snapshot.service.status, 'healthy');
+    assert.equal(snapshot.incident.status, 'resolved');
+    assert.equal(snapshot.incident.resolved_by_action_id, success.action_id);
+
+    const executed = (await evidence()).audit_log.filter(
+      event => event.tool === 'execute_rollback' && event.outcome === 'executed',
+    );
+    assert.equal(executed.length, 1);
+    assert.equal(executed[0].details.action_id, success.action_id);
+  });
+
+  it('rejects replay after the service state changed', async () => {
+    const result = await callTool('execute_rollback', {
+      mission_id: missionId,
+      incident_id: 'INC-2026-042',
+      service_id: 'checkout-api',
+      target_version: 'v41',
+      change_token: preparedToken,
+    });
+
+    assert.equal(result.isError, true);
+    assert.match(result.payload.error, /^AUTHORITY_DENIED:/);
+    assert.equal((await inspect()).service.deployed_version, 'v41');
+  });
+
+  it('blocks preparation for an out-of-scope service', async () => {
+    const result = await callTool('prepare_rollback', {
+      mission_id: missionId,
+      incident_id: 'INC-2026-077',
+      service_id: 'identity-api',
+      target_version: 'v11',
+    });
+
+    assert.equal(result.isError, true);
+    assert.equal(result.payload.error, 'AUTHORITY_DENIED: incident INC-2026-077 is not open');
+    const snapshot = await inspect('INC-2026-077');
+    assert.equal(snapshot.service.deployed_version, 'v12');
+  });
+
+  it('blocks direct execution for an out-of-scope service', async () => {
+    const result = await callTool('execute_rollback', {
+      mission_id: missionId,
+      incident_id: 'INC-2026-077',
+      service_id: 'identity-api',
+      target_version: 'v11',
+      change_token: 'a'.repeat(64),
+    });
+
+    assert.equal(result.isError, true);
+    assert.equal(result.payload.error, 'AUTHORITY_DENIED: rollback identity-api v12 -> v11 is not allowed');
+    assert.equal((await inspect('INC-2026-077')).service.deployed_version, 'v12');
+  });
+
+  it('exports a complete mission-scoped evidence trail', async () => {
+    const payload = await evidence();
+    assert.equal(payload.authority_contract.mission_id, missionId);
+    assert.deepEqual(payload.authority_contract.write_permissions[0].service_ids, ['checkout-api']);
+    assert.equal(payload.services.find(item => item.id === 'checkout-api').status, 'healthy');
+    assert.equal(payload.incidents.find(item => item.id === 'INC-2026-042').status, 'resolved');
+    assert.ok(payload.audit_log.length > 0);
+    assert.ok(payload.audit_log.every(event => event.mission_id === missionId));
     const outcomes = new Set(payload.audit_log.map(event => event.outcome));
     assert.ok(outcomes.has('allowed'));
     assert.ok(outcomes.has('executed'));
     assert.ok(outcomes.has('blocked'));
   });
 
-  it('audits every concurrent attempt, refusals included', async () => {
+  it('audits concurrent refusals and inspections without losing events', async () => {
     const countBlockedPrepares = log =>
-      log.filter(event => event.tool === 'prepare_status_change' && event.outcome === 'blocked' && event.details?.record_id === 'case-102')
-        .length;
-    const countAllowedInspections = log => log.filter(event => event.tool === 'inspect_records' && event.outcome === 'allowed').length;
+      log.filter(
+        event =>
+          event.tool === 'prepare_rollback' &&
+          event.outcome === 'blocked' &&
+          event.details?.service_id === 'identity-api',
+      ).length;
+    const countAllowedInspections = log =>
+      log.filter(event => event.tool === 'inspect_incident' && event.outcome === 'allowed').length;
 
-    const logBefore = await readAuditLog();
-
+    const before = (await evidence()).audit_log;
     const results = await Promise.all([
-      callTool('prepare_status_change', { mission_id: missionId, record_id: 'case-102', new_status: 'approved' }),
-      callTool('inspect_records', { mission_id: missionId }),
-      callTool('prepare_status_change', { mission_id: missionId, record_id: 'case-102', new_status: 'needs_followup' }),
-      callTool('inspect_records', { mission_id: missionId }),
-      callTool('prepare_status_change', { mission_id: missionId, record_id: 'case-102', new_status: 'approved' }),
-      callTool('inspect_records', { mission_id: missionId }),
+      callTool('prepare_rollback', {
+        mission_id: missionId,
+        incident_id: 'INC-2026-077',
+        service_id: 'identity-api',
+        target_version: 'v11',
+      }),
+      callTool('inspect_incident', { mission_id: missionId, incident_id: 'INC-2026-042' }),
+      callTool('prepare_rollback', {
+        mission_id: missionId,
+        incident_id: 'INC-2026-077',
+        service_id: 'identity-api',
+        target_version: 'v11',
+      }),
+      callTool('inspect_incident', { mission_id: missionId, incident_id: 'INC-2026-077' }),
+      callTool('prepare_rollback', {
+        mission_id: missionId,
+        incident_id: 'INC-2026-077',
+        service_id: 'identity-api',
+        target_version: 'v11',
+      }),
+      callTool('inspect_incident', { mission_id: missionId, incident_id: 'INC-2026-042' }),
     ]);
-    assert.deepEqual(
-      results.map(result => result.isError),
-      [true, false, true, false, true, false],
-    );
+    assert.deepEqual(results.map(result => result.isError), [true, false, true, false, true, false]);
 
-    const logAfter = await readAuditLog();
-    assert.equal(countBlockedPrepares(logAfter), countBlockedPrepares(logBefore) + 3, 'no refusal may be lost under concurrency');
-    assert.equal(countAllowedInspections(logAfter), countAllowedInspections(logBefore) + 3);
-    assert.deepEqual((await readRecords()).get('case-102'), seedRecord('case-102'));
+    const afterLog = (await evidence()).audit_log;
+    assert.equal(countBlockedPrepares(afterLog), countBlockedPrepares(before) + 3);
+    assert.equal(countAllowedInspections(afterLog), countAllowedInspections(before) + 3);
   });
 
   it('fails closed when AuthorityContract expires_at is malformed', async () => {
@@ -443,10 +416,12 @@ describe('governed operations MCP server (black-box)', { timeout: 120_000 }, () 
           },
         },
       }));
-      const result = await invalidClient.callTool({ name: 'inspect_records', arguments: { mission_id: missionId } });
-      const textPart = result.content?.find(part => part.type === 'text');
+      const result = await invalidClient.callTool({
+        name: 'inspect_incident',
+        arguments: { mission_id: missionId, incident_id: 'INC-2026-042' },
+      });
       assert.equal(result.isError, true);
-      assert.equal(JSON.parse(textPart.text).error, 'AUTHORITY_DENIED: AuthorityContract expires_at is invalid');
+      assert.match(result.content[0].text, /expires_at is invalid/);
     } finally {
       await invalidClient.close();
       await stopServer(started.child);

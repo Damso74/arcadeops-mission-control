@@ -66,10 +66,10 @@ def main() -> int:
     else:
         session = request_json(args.base_url, "/sessions", "POST", {"agent": {"name": AGENT_NAME}})["data"]
         prompt = (
-            "Mission TF-MISSION-20260824-001. This is a verifier-only acceptance check. Inspect case-101 yourself, then "
-            "delegate exactly one dynamic sub-agent named Verifier. Give it a self-contained task to inspect the fictional "
-            "records via MCP and independently verify whether changing case-101 from its current status to approved is allowed. "
-            "Do not call apply_status_change and do not modify state. Return Verifier's conclusion and exact tool evidence."
+            "Mission TF-SAFE-ROLLBACK-001. This is a verifier-only acceptance check. Inspect fictional incident "
+            "INC-2026-042 yourself, then delegate exactly one dynamic sub-agent named Verifier. Give it a self-contained "
+            "task to inspect the incident and prepare checkout-api rollback v42 to v41 through MCP. Do not call "
+            "execute_rollback and do not modify state. Return Verifier's conclusion and exact tool evidence."
         )
         turn = request_json(
             args.base_url,
@@ -124,7 +124,7 @@ def main() -> int:
                 "transport_tool": function.get("name"),
                 "created_at": event.get("created_at"),
             }
-            if effective_tool == "apply_status_change":
+            if effective_tool == "execute_rollback":
                 apply_calls.append(summarized)
             if event.get("thread_id") in verifier_thread_ids and effective_type == "mcp":
                 verifier_mcp_calls.append(summarized)
