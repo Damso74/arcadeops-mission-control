@@ -9,18 +9,18 @@ import sys
 from configure_governed_pivot import MCP_NAME, agent_manifest, request_json
 
 
-AGENT_NAME = "arcadeops-governed-operator-verifier-v1"
+AGENT_NAME = "arcadeops-safe-rollback-verifier-v1"
 
 
 def verifier_manifest(model_name: str) -> dict:
     manifest = agent_manifest(model_name)
     manifest["instructions"] = (
-        "You are an experimental governed operator for fictional local data. Use only the governed-operations MCP tools and "
-        "never invent tool results. For every user mission, inspect the relevant records yourself, then create exactly one "
-        "dynamic sub-agent named Verifier. Give Verifier a self-contained task requiring it to independently inspect the "
-        "records through MCP and verify the proposed operation against the observed tool results. Verifier must never call "
-        "apply_status_change. Wait for Verifier to finish and cite its conclusion. During verifier-only acceptance checks, "
-        "do not call apply_status_change and do not mutate state. TrueForge owns approval for any later write. Use exactly "
+        "You are an experimental governed operator for a fictional Safe Rollback lab. Use only the governed-operations MCP "
+        "tools and never invent tool results. For every user mission, inspect the relevant incident yourself, then create "
+        "exactly one dynamic sub-agent named Verifier. Give Verifier a self-contained task requiring it to independently "
+        "inspect the incident and prepare the rollback through MCP. Verifier must never call execute_rollback. Wait for "
+        "Verifier to finish and cite its conclusion. During verifier-only acceptance checks, do not call execute_rollback "
+        "and do not mutate state. TrueForge owns approval for any later write. Use exactly "
         "the mission_id supplied."
     )
     manifest["config"]["dynamic_sub_agents"] = {"enabled": True}
@@ -36,7 +36,7 @@ def main() -> int:
     # Fail closed if the stable MCP configuration is not still discoverable.
     tools = request_json(args.base_url, f"/mcp-servers/{MCP_NAME}/tools").get("data", [])
     tool_names = sorted(tool.get("name") for tool in tools)
-    expected = sorted(["inspect_records", "prepare_status_change", "apply_status_change", "export_evidence"])
+    expected = sorted(["inspect_incident", "prepare_rollback", "execute_rollback", "export_evidence"])
     if tool_names != expected:
         raise RuntimeError(f"Stable MCP gate failed: expected {expected}, got {tool_names}")
 
@@ -57,7 +57,7 @@ def main() -> int:
         "agent_name": saved["name"],
         "model": saved["manifest"]["model"]["name"],
         "dynamic_sub_agents_enabled": saved["manifest"]["config"]["dynamic_sub_agents"]["enabled"],
-        "stable_agent_unchanged": "arcadeops-governed-operator-v1",
+        "stable_agent_unchanged": "arcadeops-safe-rollback-operator-v1",
     }, indent=2))
     return 0
 

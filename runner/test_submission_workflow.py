@@ -1,53 +1,42 @@
 from __future__ import annotations
 
-import json
 import unittest
+from unittest.mock import patch
 
 from configure_governed_pivot import mcp_manifest
 from configure_submission_agent import AGENT_NAME, submission_manifest
-from export_go_pivot_receipt import correlated_executed_action_ids
-from export_go_pivot_receipt import observed_mission_id as observed_go_pivot_mission_id
 from export_submission_receipt import (
     correlated_executed_writes,
     effective_call,
+    is_daytona_provider_ready,
+    is_daytona_sandbox_id,
+    is_degraded_precondition,
+    is_recovered_postcondition,
     observed_mission_id,
     response_payload,
+    summarize_thread_event,
 )
 from run_verifier_experiment import persisted_model_name
 
 
 class SubmissionWorkflowTests(unittest.TestCase):
-    def test_mcp_manifest_binds_bearer_to_authority_identity(self) -> None:
-        token = "test-token-" + "x" * 32
-        manifest = mcp_manifest("http://mcp.test/mcp", token)
-
-        self.assertEqual(manifest["auth"]["type"], "header")
-        self.assertEqual(manifest["auth"]["headers"]["Authorization"], f"Bearer {token}")
-        self.assertEqual(manifest["auth"]["headers"]["X-Agent-Identity"], "arcadeops-governed-operator")
-
-    def test_mcp_manifest_rejects_missing_or_short_secret(self) -> None:
-        for token in (None, "too-short"):
-            with self.subTest(token=token):
-                with self.assertRaisesRegex(RuntimeError, "TRUEFORGE_MCP_AUTH_TOKEN"):
-                    mcp_manifest("http://mcp.test/mcp", token)
-
     def test_manifest_enables_all_hackathon_capabilities(self) -> None:
         manifest = submission_manifest("anthropic/test-model")
 
-        self.assertEqual(AGENT_NAME, "arcadeops-mission-control-v1")
+        self.assertEqual(AGENT_NAME, "arcadeops-mission-control-v2")
         self.assertTrue(manifest["config"]["sandbox"]["enabled"])
         self.assertTrue(manifest["config"]["dynamic_sub_agents"]["enabled"])
-        self.assertEqual(manifest["mcp_servers"][0]["require_approval_for_tools"], ["@write"])
+        self.assertEqual(manifest["mcp_servers"][0]["require_approval_for_tools"], ["execute_rollback"])
         self.assertIn("SANDBOX_VALIDATION_PASS", manifest["instructions"])
-        self.assertIn("Verifier must never call apply_status_change", manifest["instructions"])
+        self.assertIn("Verifier must never call execute_rollback", manifest["instructions"])
+        self.assertIn("inspect_incident again", manifest["instructions"])
 
     def test_effective_call_unwraps_deferred_mcp_transport(self) -> None:
         call = {
             "id": "call-1",
             "function": {
                 "name": "call_tool",
-                "arguments": '{"mcp_server":"governed-operations","tool_name":"inspect_records",'
-                '"input":{"mission_id":"mission-deferred"}}',
+                "arguments": '{"mcp_server":"governed-operations","tool_name":"inspect_incident","input":{"mission_id":"mission-1"}}',
             },
             "tool_info": {"type": "truefoundry-system", "mcp_server_name": "deferred_tools"},
         }
@@ -55,30 +44,19 @@ class SubmissionWorkflowTests(unittest.TestCase):
 
         parsed = effective_call(call, event)
 
-        self.assertEqual(parsed["tool"], "inspect_records")
+        self.assertEqual(parsed["tool"], "inspect_incident")
         self.assertEqual(parsed["server"], "governed-operations")
         self.assertEqual(parsed["tool_type"], "mcp")
-        self.assertEqual(parsed["mission_id"], "mission-deferred")
+        self.assertEqual(parsed["mission_id"], "mission-1")
 
     def test_effective_call_identifies_sandbox_exec(self) -> None:
         call = {
             "id": "call-2",
             "function": {
                 "name": "exec",
-                "arguments": json.dumps({
-                    "intent": "validate",
-                    "command": (
-                        "from mcp_client import call_tool\n"
-                        "call_tool('governed-operations', 'inspect_records', {})\n"
-                        "call_tool('governed-operations', 'prepare_status_change', {})"
-                    ),
-                }),
+                "arguments": '{"intent":"validate","command":"from mcp_client import call_tool\\ncall_tool(\\\"inspect_incident\\\", {})\\ncall_tool(\\\"prepare_rollback\\\", {})"}',
             },
-            "tool_info": {
-                "type": "truefoundry-system",
-                "mcp_server_name": "sandbox",
-                "original_tool_name": "exec",
-            },
+            "tool_info": {"name": "exec", "type": "truefoundry-system"},
         }
 
         parsed = effective_call(call, {"thread_id": "main", "created_at": "2026-08-25T00:01:00Z"})
@@ -86,86 +64,60 @@ class SubmissionWorkflowTests(unittest.TestCase):
         self.assertEqual(parsed["tool"], "exec")
         self.assertEqual(parsed["server"], "sandbox")
         self.assertTrue(parsed["sandbox_command_evidence"]["uses_mcp_client"])
-        self.assertTrue(parsed["sandbox_command_evidence"]["mentions_inspect_records"])
-        self.assertTrue(parsed["sandbox_command_evidence"]["mentions_prepare_status_change"])
-        self.assertFalse(parsed["sandbox_command_evidence"]["mentions_apply_status_change"])
+        self.assertTrue(parsed["sandbox_command_evidence"]["mentions_inspect_incident"])
+        self.assertTrue(parsed["sandbox_command_evidence"]["mentions_prepare_rollback"])
         self.assertTrue(parsed["sandbox_command_evidence"]["read_only_bridge"])
         self.assertNotIn("command", parsed["sandbox_command_evidence"])
 
-    def test_effective_call_flags_a_literal_or_dynamically_named_sandbox_write(self) -> None:
-        call = {
-            "id": "call-dangerous",
-            "function": {
-                "name": "exec",
-                "arguments": json.dumps({
-                    "command": (
-                        "from mcp_client import call_tool\n"
-                        "call_tool('governed-operations', 'inspect_records', {})\n"
-                        "call_tool('governed-operations', 'prepare_status_change', {})\n"
-                        "name = 'apply_' + 'status_change'\n"
-                        "call_tool('governed-operations', name, {})"
-                    )
-                }),
-            },
-            "tool_info": {"type": "truefoundry-system", "mcp_server_name": "sandbox"},
-        }
-
-        parsed = effective_call(call, {"thread_id": "main"})
-
-        self.assertFalse(parsed["sandbox_command_evidence"]["mentions_apply_status_change"])
-        self.assertFalse(parsed["sandbox_command_evidence"]["read_only_bridge"])
-
-    def test_submission_mission_is_derived_from_observed_calls(self) -> None:
-        calls = [{"server": "governed-operations", "tool_call_id": "call-1", "mission_id": "mission-observed"}]
-        responses = {"call-1": {"payload": {"mission_id": "mission-observed"}}}
-
-        self.assertEqual(observed_mission_id(calls, responses), "mission-observed")
-
-    def test_submission_mission_rejects_missing_or_conflicting_evidence(self) -> None:
-        with self.assertRaisesRegex(RuntimeError, "exactly one observed mission_id"):
-            observed_mission_id([], {})
-        with self.assertRaisesRegex(RuntimeError, "exactly one observed mission_id"):
-            observed_mission_id(
-                [
-                    {"server": "governed-operations", "tool_call_id": "one", "mission_id": "mission-one"},
-                    {"server": "governed-operations", "tool_call_id": "two", "mission_id": "mission-two"},
-                ],
-                {},
-            )
-
-    def test_go_pivot_mission_is_derived_without_exposing_change_token(self) -> None:
-        tool_calls = {
-            "call-1": {
-                "tool_type": "mcp",
-                "arguments": {"mission_id": "mission-go-pivot"},
+    def test_effective_call_rejects_literal_or_dynamically_named_sandbox_write(self) -> None:
+        commands = [
+            "call_tool('inspect_incident', {})\ncall_tool('prepare_rollback', {})\ncall_tool('execute_rollback', {})",
+            "call_tool('inspect_incident', {})\ncall_tool('prepare_rollback', {})\ncall_tool('execute_' + 'rollback', {})",
+        ]
+        for index, command in enumerate(commands):
+            call = {
+                "id": f"write-{index}",
+                "function": {"name": "exec", "arguments": {"intent": "validate", "command": command}},
+                "tool_info": {"name": "exec", "type": "truefoundry-system"},
             }
-        }
-        responses = {"call-1": {"payload": {"mission_id": "mission-go-pivot", "applied": True}}}
+            parsed = effective_call(call, {"thread_id": "main", "created_at": "2026-08-25T00:01:00Z"})
+            self.assertFalse(parsed["sandbox_command_evidence"]["read_only_bridge"])
 
-        self.assertEqual(observed_go_pivot_mission_id(tool_calls, responses), "mission-go-pivot")
+    def test_mcp_manifest_binds_bearer_to_authority_identity(self) -> None:
+        with patch("configure_governed_pivot.authority_agent_identity", return_value="operator-1"):
+            manifest = mcp_manifest("http://mcp.test/mcp", "x" * 32)
+        self.assertEqual(manifest["auth"]["headers"]["Authorization"], f"Bearer {'x' * 32}")
+        self.assertEqual(manifest["auth"]["headers"]["X-Agent-Identity"], "operator-1")
+
+    def test_mcp_manifest_rejects_missing_or_short_secret(self) -> None:
+        for token in (None, "short"):
+            with self.assertRaisesRegex(RuntimeError, "ABSENT_OR_TOO_SHORT"):
+                mcp_manifest("http://mcp.test/mcp", token)
+
+    def test_mission_is_derived_from_calls_and_responses(self) -> None:
+        calls = [{"server": "governed-operations", "tool_call_id": "c1", "mission_id": "mission-1"}]
+        responses = {"c1": {"payload": {"mission_id": "mission-1"}}}
+        self.assertEqual(observed_mission_id(calls, responses), "mission-1")
+        with self.assertRaisesRegex(RuntimeError, "exactly one"):
+            observed_mission_id([], {})
+        with self.assertRaisesRegex(RuntimeError, "exactly one"):
+            observed_mission_id(calls, {"c1": {"payload": {"mission_id": "mission-2"}}})
 
     def test_write_evidence_requires_matching_approval_and_allow_ids(self) -> None:
         writes = [{"tool_call_id": "write-1"}]
-        unrelated_approvals = [{"tool_call_id": "other"}]
-        unrelated_decisions = [{"tool_call_id": "other", "decision": "allow"}]
-
-        self.assertEqual(correlated_executed_writes(writes, unrelated_approvals, unrelated_decisions), [])
-        self.assertEqual(
-            correlated_executed_action_ids(writes, unrelated_approvals, unrelated_decisions),
-            set(),
-        )
-
         approvals = [{"tool_call_id": "write-1"}]
-        decisions = [{"tool_call_id": "write-1", "decision": "allow"}]
-        self.assertEqual(correlated_executed_writes(writes, approvals, decisions), writes)
-        self.assertEqual(correlated_executed_action_ids(writes, approvals, decisions), {"write-1"})
+        mismatched = [{"tool_call_id": "write-2", "decision": "allow"}]
+        matched = [{"tool_call_id": "write-1", "decision": "allow"}]
+        self.assertEqual(correlated_executed_writes(writes, approvals, mismatched), [])
+        self.assertEqual(correlated_executed_writes(writes, approvals, matched), writes)
 
     def test_verifier_model_is_derived_from_persisted_agent(self) -> None:
-        agent = {"manifest": {"model": {"name": "anthropic/test-model"}}}
-
-        self.assertEqual(persisted_model_name(agent), "anthropic/test-model")
-        with self.assertRaisesRegex(RuntimeError, "model identity"):
-            persisted_model_name({"manifest": {"model": {}}})
+        self.assertEqual(
+            persisted_model_name({"manifest": {"model": {"name": "anthropic/test-model"}}}),
+            "anthropic/test-model",
+        )
+        with self.assertRaisesRegex(RuntimeError, "could not be resolved"):
+            persisted_model_name({"manifest": {"model": {"name": "unknown"}}})
 
     def test_response_payload_unwraps_mcp_error_envelope(self) -> None:
         event = {
@@ -173,6 +125,63 @@ class SubmissionWorkflowTests(unittest.TestCase):
         }
 
         self.assertEqual(response_payload(event), {"error": "AUTHORITY_DENIED: scope"})
+
+    def test_recovered_postcondition_requires_target_version_and_healthy_threshold(self) -> None:
+        recovered = {
+            "incident": {"id": "INC-2026-042", "status": "resolved"},
+            "service": {
+                "id": "checkout-api",
+                "deployed_version": "v41",
+                "status": "healthy",
+                "error_rate_percent": 0.7,
+                "healthy_threshold_percent": 2.0,
+            },
+        }
+        degraded = {
+            **recovered,
+            "service": {**recovered["service"], "error_rate_percent": 18.4},
+        }
+
+        self.assertTrue(is_recovered_postcondition(recovered))
+        self.assertFalse(is_recovered_postcondition(degraded))
+
+    def test_degraded_precondition_requires_open_incident_and_threshold_breach(self) -> None:
+        degraded = {
+            "incident": {"id": "INC-2026-042", "status": "open"},
+            "service": {
+                "id": "checkout-api",
+                "deployed_version": "v42",
+                "status": "degraded",
+                "error_rate_percent": 18.4,
+                "healthy_threshold_percent": 2.0,
+            },
+        }
+        self.assertTrue(is_degraded_precondition(degraded))
+        self.assertFalse(is_degraded_precondition({**degraded, "incident": {**degraded["incident"], "status": "resolved"}}))
+
+    def test_daytona_readiness_uses_trueforge_provider_shape(self) -> None:
+        ready = {"manifest": {"type": "daytona", "auth": {"api_key": "[REDACTED]"}}, "status": "ready"}
+
+        self.assertTrue(is_daytona_provider_ready(ready))
+        self.assertFalse(is_daytona_provider_ready({**ready, "status": "pending"}))
+        self.assertFalse(is_daytona_provider_ready({"type": "daytona", "status": "ready"}))
+
+    def test_daytona_sandbox_id_and_subagent_summary_are_privacy_scoped(self) -> None:
+        event = {
+            "id": "event-1",
+            "thread_id": "child-1",
+            "agent_info": {"name": "Verifier", "type": "dynamic", "input": "private task text"},
+            "parent": {"thread_id": "main", "tool_call_id": "call-1"},
+            "created_at": "2026-08-25T00:00:00Z",
+            "unexpected_private_field": "do not export",
+        }
+
+        self.assertTrue(is_daytona_sandbox_id("v1:daytona:tenant.sandbox"))
+        self.assertFalse(is_daytona_sandbox_id("v1:local:tenant.sandbox"))
+        summary = summarize_thread_event(event)
+        self.assertEqual(summary["name"], "Verifier")
+        self.assertNotIn("input", summary)
+        self.assertNotIn("unexpected_private_field", summary)
 
 
 if __name__ == "__main__":

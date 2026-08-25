@@ -24,7 +24,7 @@ if ($paragraphs.Count -lt 8) {
 $synth = [System.Speech.Synthesis.SpeechSynthesizer]::new()
 try {
     $synth.SelectVoice('Microsoft Zira Desktop')
-    $synth.Rate = -2
+    $synth.Rate = -1
     $synth.Volume = 100
     $prompt = [System.Speech.Synthesis.PromptBuilder]::new([System.Globalization.CultureInfo]::GetCultureInfo('en-US'))
     for ($index = 0; $index -lt $paragraphs.Count; $index++) {

@@ -1,4 +1,4 @@
-"""Export strict integrated evidence from one persisted TrueForge session."""
+"""Export strict Safe Rollback evidence from one persisted TrueForge session."""
 
 from __future__ import annotations
 
@@ -16,8 +16,12 @@ from configure_governed_pivot import MCP_NAME, request_json
 from configure_submission_agent import AGENT_NAME
 
 
-READ_ONLY_SANDBOX_TOOLS = {"inspect_records", "prepare_status_change"}
-KNOWN_MCP_TOOLS = READ_ONLY_SANDBOX_TOOLS | {"apply_status_change", "export_evidence"}
+MISSION_ID = "TF-SAFE-ROLLBACK-001"
+INCIDENT_ID = "INC-2026-042"
+SERVICE_ID = "checkout-api"
+TARGET_VERSION = "v41"
+READ_ONLY_SANDBOX_TOOLS = {"inspect_incident", "prepare_rollback"}
+KNOWN_MCP_TOOLS = READ_ONLY_SANDBOX_TOOLS | {"execute_rollback", "export_evidence"}
 
 
 def get_json(base_url: str, path: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -75,9 +79,9 @@ def sandbox_command_evidence(command: str) -> dict[str, Any]:
     return {
         "command_sha256": hashlib.sha256(command.encode("utf-8")).hexdigest(),
         "uses_mcp_client": "mcp_client" in command or "mcp-client" in command,
-        "mentions_inspect_records": "inspect_records" in literal_tools,
-        "mentions_prepare_status_change": "prepare_status_change" in literal_tools,
-        "mentions_apply_status_change": "apply_status_change" in literal_tools,
+        "mentions_inspect_incident": "inspect_incident" in literal_tools,
+        "mentions_prepare_rollback": "prepare_rollback" in literal_tools,
+        "mentions_execute_rollback": "execute_rollback" in literal_tools,
         "direct_call_count": direct_call_count,
         "literal_tools": sorted(literal_tools),
         "read_only_bridge": direct_call_count == 2 and literal_tools == READ_ONLY_SANDBOX_TOOLS,
@@ -134,6 +138,8 @@ def effective_call(call: dict[str, Any], event: dict[str, Any]) -> dict[str, Any
         )
         if isinstance(nested_arguments, dict):
             arguments = nested_arguments
+    if tool == "exec" and tool_type == "truefoundry-system" and not server:
+        server = "sandbox"
     result = {
         "thread_id": event.get("thread_id"),
         "tool_call_id": call.get("id"),
@@ -152,6 +158,67 @@ def effective_call(call: dict[str, Any], event: dict[str, Any]) -> dict[str, Any
             **sandbox_command_evidence(command),
         }
     return result
+
+
+def is_recovered_postcondition(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    incident = payload.get("incident") or {}
+    service = payload.get("service") or {}
+    error_rate = service.get("error_rate_percent")
+    threshold = service.get("healthy_threshold_percent")
+    return (
+        incident.get("id") == INCIDENT_ID
+        and incident.get("status") == "resolved"
+        and service.get("id") == SERVICE_ID
+        and service.get("deployed_version") == TARGET_VERSION
+        and service.get("status") == "healthy"
+        and isinstance(error_rate, (int, float))
+        and isinstance(threshold, (int, float))
+        and error_rate <= threshold
+    )
+
+
+def is_degraded_precondition(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    incident = payload.get("incident") or {}
+    service = payload.get("service") or {}
+    error_rate = service.get("error_rate_percent")
+    threshold = service.get("healthy_threshold_percent")
+    return (
+        incident.get("id") == INCIDENT_ID
+        and incident.get("status") == "open"
+        and service.get("id") == SERVICE_ID
+        and service.get("deployed_version") == "v42"
+        and service.get("status") == "degraded"
+        and isinstance(error_rate, (int, float))
+        and isinstance(threshold, (int, float))
+        and error_rate > threshold
+    )
+
+
+def is_daytona_provider_ready(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    manifest = payload.get("manifest") or {}
+    return isinstance(manifest, dict) and manifest.get("type") == "daytona" and payload.get("status") == "ready"
+
+
+def is_daytona_sandbox_id(value: Any) -> bool:
+    return isinstance(value, str) and value.startswith("v1:daytona:") and len(value) > len("v1:daytona:")
+
+
+def summarize_thread_event(event: dict[str, Any]) -> dict[str, Any]:
+    agent_info = event.get("agent_info") or {}
+    return {
+        "event_id": event.get("id"),
+        "thread_id": event.get("thread_id"),
+        "name": agent_info.get("name"),
+        "type": agent_info.get("type"),
+        "parent": event.get("parent"),
+        "created_at": event.get("created_at"),
+    }
 
 
 def main() -> int:
@@ -188,37 +255,46 @@ def main() -> int:
                 "responded_at": event.get("created_at"),
             }
         elif event.get("type") == "tool.approval_required":
-            approvals.extend({
-                "approval_event_id": event.get("id"),
-                "tool_call_id": call.get("id"),
-                "requested_at": event.get("created_at"),
-            } for call in event.get("tool_calls") or [])
+            approvals.extend(
+                {
+                    "approval_event_id": event.get("id"),
+                    "tool_call_id": call.get("id"),
+                    "requested_at": event.get("created_at"),
+                }
+                for call in event.get("tool_calls") or []
+            )
         elif event.get("type") == "turn.created":
             for item in event.get("input") or []:
                 if item.get("type") == "user.tool_approval":
                     approval = item.get("approval") or {}
-                    decisions.append({
-                        "tool_call_id": item.get("tool_call_id"),
-                        "actor": "human_via_trueforge_ui",
-                        "decision": approval.get("status"),
-                        "reason": approval.get("reason"),
-                        "decided_at": event.get("created_at"),
-                    })
+                    decisions.append(
+                        {
+                            "tool_call_id": item.get("tool_call_id"),
+                            "actor": "human_via_trueforge_ui",
+                            "decision": approval.get("status"),
+                            "reason_provided": bool(approval.get("reason")),
+                            "decided_at": event.get("created_at"),
+                        }
+                    )
 
     sandbox_calls = [call for call in calls if call.get("tool") == "exec" and call.get("server") == "sandbox"]
     sandbox_mcp_bridge_calls = [
-        call for call in sandbox_calls
+        call
+        for call in sandbox_calls
         if (call.get("sandbox_command_evidence") or {}).get("uses_mcp_client")
-        and (call.get("sandbox_command_evidence") or {}).get("mentions_inspect_records")
-        and (call.get("sandbox_command_evidence") or {}).get("mentions_prepare_status_change")
+        and (call.get("sandbox_command_evidence") or {}).get("mentions_inspect_incident")
+        and (call.get("sandbox_command_evidence") or {}).get("mentions_prepare_rollback")
     ]
     sandbox_readonly_bridge_calls = [
-        call for call in sandbox_mcp_bridge_calls
+        call
+        for call in sandbox_mcp_bridge_calls
         if (call.get("sandbox_command_evidence") or {}).get("read_only_bridge")
     ]
     sandbox_pass_calls = [
-        call for call in sandbox_readonly_bridge_calls
-        if "SANDBOX_VALIDATION_PASS" in json.dumps(responses.get(call["tool_call_id"], {}).get("payload"), ensure_ascii=False)
+        call
+        for call in sandbox_readonly_bridge_calls
+        if "SANDBOX_VALIDATION_PASS"
+        in json.dumps(responses.get(call["tool_call_id"], {}).get("payload"), ensure_ascii=False)
     ]
     verifier_calls = [call for call in calls if call.get("thread_id") in verifier_thread_ids]
     mission_id = observed_mission_id(calls, responses)
@@ -231,44 +307,94 @@ def main() -> int:
         and not responses[call["tool_call_id"]]["payload"].get("error")
         and responses[call["tool_call_id"]]["payload"].get("mission_id") == mission_id
     }
-    write_calls = [call for call in calls if call.get("tool") == "apply_status_change" and call.get("server") == MCP_NAME]
+    write_calls = [call for call in calls if call.get("tool") == "execute_rollback" and call.get("server") == MCP_NAME]
     executed_writes = [
-        call for call in write_calls
+        {
+            **call,
+            "response": responses.get(call["tool_call_id"], {}).get("payload"),
+            "responded_at": responses.get(call["tool_call_id"], {}).get("responded_at"),
+        }
+        for call in write_calls
         if isinstance(responses.get(call["tool_call_id"], {}).get("payload"), dict)
         and responses[call["tool_call_id"]]["payload"].get("applied") is True
+        and responses[call["tool_call_id"]]["payload"].get("recovered") is True
     ]
     authorized_executed_writes = correlated_executed_writes(executed_writes, approvals, decisions)
-    write_times = [call.get("attempted_at") for call in write_calls if call.get("attempted_at")]
+    write_call_ids = {call.get("tool_call_id") for call in write_calls}
+    approved_write_ids = {item.get("tool_call_id") for item in approvals} & write_call_ids
+    allowed_write_decisions = [
+        item for item in decisions if item.get("tool_call_id") in write_call_ids and item.get("decision") == "allow"
+    ]
+
     pass_times = [
         responses.get(call["tool_call_id"], {}).get("responded_at")
         for call in sandbox_pass_calls
         if responses.get(call["tool_call_id"], {}).get("responded_at")
     ]
+    write_attempt_times = [call.get("attempted_at") for call in write_calls if call.get("attempted_at")]
+    executed_response_times = [
+        responses.get(call["tool_call_id"], {}).get("responded_at")
+        for call in executed_writes
+        if responses.get(call["tool_call_id"], {}).get("responded_at")
+    ]
+    decision_times = [item.get("decided_at") for item in allowed_write_decisions if item.get("decided_at")]
+
+    inspection_calls = [call for call in calls if call.get("tool") == "inspect_incident" and call.get("server") == MCP_NAME]
+    degraded_inspections = [
+        {
+            **call,
+            "response": responses.get(call["tool_call_id"], {}).get("payload"),
+            "responded_at": responses.get(call["tool_call_id"], {}).get("responded_at"),
+        }
+        for call in inspection_calls
+        if is_degraded_precondition(responses.get(call["tool_call_id"], {}).get("payload"))
+    ]
+    recovered_inspections = [
+        {
+            **call,
+            "response": responses.get(call["tool_call_id"], {}).get("payload"),
+            "responded_at": responses.get(call["tool_call_id"], {}).get("responded_at"),
+        }
+        for call in inspection_calls
+        if is_recovered_postcondition(responses.get(call["tool_call_id"], {}).get("payload"))
+    ]
+    postcondition_times = [item.get("responded_at") for item in recovered_inspections if item.get("responded_at")]
+    precondition_times = [item.get("responded_at") for item in degraded_inspections if item.get("responded_at")]
 
     agent_ref = session.get("agent") or {}
     agent = get_json(args.base_url, f"/agents/{quote(str(agent_ref.get('id', '')), safe='')}").get("data", {})
     model = ((agent.get("manifest") or {}).get("model") or {}).get("name", "unknown/unknown")
     provider, _, model_name = model.partition("/")
     sandbox_ids = [event.get("sandbox_id") for event in sandbox_events if event.get("sandbox_id")]
+    sandbox_provider = get_json(args.base_url, "/settings/sandbox-providers").get("data", {})
+    daytona_ready = is_daytona_provider_ready(sandbox_provider)
 
     checks = {
         "submission_agent_resolved": agent.get("name") == AGENT_NAME,
         "all_turns_terminal": bool(turns) and all((turn.get("state") or {}).get("status") == "done" for turn in turns),
         "exactly_one_verifier": len(verifier_events) == 1,
-        "verifier_used_real_mcp": {"inspect_records", "prepare_status_change"}.issubset(verifier_tools),
-        "verifier_never_attempted_write": all(call.get("tool") != "apply_status_change" for call in verifier_calls),
-        "daytona_sandbox_created": bool(sandbox_ids) and all("daytona" in sandbox_id for sandbox_id in sandbox_ids),
+        "verifier_used_real_mcp": {"inspect_incident", "prepare_rollback"}.issubset(verifier_tools),
+        "verifier_never_attempted_write": all(call.get("tool") != "execute_rollback" for call in verifier_calls),
+        "daytona_provider_ready": daytona_ready,
+        "daytona_sandbox_created": bool(sandbox_ids) and all(is_daytona_sandbox_id(item) for item in sandbox_ids),
         "sandbox_exec_observed": bool(sandbox_calls),
         "sandbox_generated_code_uses_mcp_bridge": bool(sandbox_mcp_bridge_calls),
-        "sandbox_validator_read_only": bool(sandbox_calls) and all(
-            (call.get("sandbox_command_evidence") or {}).get("read_only_bridge")
-            for call in sandbox_calls
-        ),
+        "sandbox_validator_read_only": bool(sandbox_pass_calls),
         "sandbox_validation_pass_observed": bool(sandbox_pass_calls),
-        "sandbox_validation_before_write": bool(pass_times and write_times) and min(pass_times) < min(write_times),
-        "native_approval_pause_observed": bool(approvals),
-        "human_allow_observed": any(item.get("decision") == "allow" for item in decisions),
-        "authorized_write_executed_once": len(executed_writes) == 1 and len(authorized_executed_writes) == 1,
+        "sandbox_validation_before_write": bool(pass_times and write_attempt_times)
+        and min(pass_times) < min(write_attempt_times),
+        "native_approval_pause_for_write": bool(approved_write_ids),
+        "human_allow_for_write": bool(allowed_write_decisions),
+        "write_response_after_human_allow": bool(decision_times and executed_response_times)
+        and min(decision_times) < min(executed_response_times),
+        "authorized_rollback_executed_once": len(executed_writes) == 1 and len(authorized_executed_writes) == 1,
+        "precondition_inspection_observed": bool(degraded_inspections),
+        "precondition_before_write": bool(precondition_times and write_attempt_times)
+        and min(precondition_times) < min(write_attempt_times),
+        "postcondition_inspection_observed": bool(recovered_inspections),
+        "postcondition_after_write": bool(executed_response_times and postcondition_times)
+        and min(executed_response_times) < max(postcondition_times),
+        "service_recovered_on_target_version": bool(recovered_inspections),
         "model_identity_resolved": provider != "unknown" and bool(model_name),
     }
     if not all(checks.values()):
@@ -277,24 +403,35 @@ def main() -> int:
 
     timestamps = [event.get("created_at") for event in events if event.get("created_at")]
     receipt = {
-        "schema_version": "1.0.0",
-        "receipt_kind": "trueforge-submission-acceptance",
+        "schema_version": "2.0.0",
+        "receipt_kind": "trueforge-safe-rollback-acceptance",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": "TrueForge 0.1.4 persisted public APIs",
         "mission_id": mission_id,
+        "incident_id": INCIDENT_ID,
+        "service_id": SERVICE_ID,
+        "target_version": TARGET_VERSION,
         "session_id": args.session_id,
         "agent_identity": {"id": agent.get("id"), "name": agent.get("name")},
         "model_provider": provider,
         "model_name": model_name,
         "sandbox_provider": "daytona",
-        "sandbox_ids": sandbox_ids,
-        "subagent_events": verifier_events,
+        "sandbox_references": [
+            {
+                "provider": "daytona",
+                "id_sha256": hashlib.sha256(item.encode("utf-8")).hexdigest(),
+            }
+            for item in sandbox_ids
+        ],
+        "subagent_events": [summarize_thread_event(event) for event in verifier_events],
         "sandbox_exec_calls": sandbox_calls,
         "approval_requests": approvals,
         "human_decisions": decisions,
         "write_calls": write_calls,
         "executed_writes": executed_writes,
         "approval_correlated_writes": authorized_executed_writes,
+        "precondition_inspections": degraded_inspections,
+        "postcondition_inspections": recovered_inspections,
         "verification_results": checks,
         "prior_evidence": [
             "evidence/go-pivot-evidence-receipt.json",
@@ -305,7 +442,7 @@ def main() -> int:
         "final_status": "SUBMISSION_ACCEPTANCE_PASS",
         "limitations": [
             "The human actor is the authenticated local TrueForge user; no richer approver profile was observed.",
-            "All MCP records and writes are fictional and local-only.",
+            "The incident, service metrics, and rollback are fictional and local-only.",
         ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

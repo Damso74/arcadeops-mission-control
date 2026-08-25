@@ -1,17 +1,46 @@
 {
-  "records": [
+  "schema_version": 2,
+  "services": [
     {
-      "id": "case-101",
-      "subject": "Demo onboarding review",
-      "status": "pending_review",
-      "risk": "low",
+      "id": "checkout-api",
+      "deployed_version": "v42",
+      "stable_version": "v41",
+      "error_rate_percent": 18.4,
+      "stable_error_rate_percent": 0.7,
+      "healthy_threshold_percent": 2.0,
+      "status": "degraded",
       "fictional": true
     },
     {
-      "id": "case-102",
-      "subject": "Demo access recertification",
-      "status": "verified",
-      "risk": "medium",
+      "id": "identity-api",
+      "deployed_version": "v12",
+      "stable_version": "v12",
+      "error_rate_percent": 0.4,
+      "stable_error_rate_percent": 0.4,
+      "healthy_threshold_percent": 2.0,
+      "status": "healthy",
+      "fictional": true
+    }
+  ],
+  "incidents": [
+    {
+      "id": "INC-2026-042",
+      "service_id": "checkout-api",
+      "summary": "Checkout errors increased after deployment v42",
+      "suspected_version": "v42",
+      "recommended_action": "rollback",
+      "rollback_target": "v41",
+      "status": "open",
+      "fictional": true
+    },
+    {
+      "id": "INC-2026-077",
+      "service_id": "identity-api",
+      "summary": "Synthetic identity latency review",
+      "suspected_version": "v12",
+      "recommended_action": "observe",
+      "rollback_target": "v11",
+      "status": "monitoring",
       "fictional": true
     }
   ],

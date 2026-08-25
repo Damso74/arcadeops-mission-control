@@ -1,18 +1,18 @@
-name: trueforge-governed-pivot
+name: trueforge-safe-rollback
 
 services:
-  governed-operations:
+  safe-rollback:
     build:
       context: ./mcp_server
-    image: trueforge-governed-mcp:local
-    container_name: trueforge-governed-mcp-20260824
+    image: trueforge-safe-rollback-mcp:local
+    container_name: trueforge-safe-rollback-mcp-20260825
     restart: unless-stopped
     environment:
       PORT: "8765"
       STATE_PATH: /data/records.json
       MCP_AUTH_TOKEN: ${TRUEFORGE_MCP_AUTH_TOKEN:?TRUEFORGE_MCP_AUTH_TOKEN must be set}
     volumes:
-      - governed-mcp-state:/data
+      - safe-rollback-state:/data
     networks:
       - trueforge
     healthcheck:
@@ -26,9 +26,8 @@ services:
       retries: 10
 
 volumes:
-  governed-mcp-state:
-    external: true
-    name: trueforge-governed-mcp-state
+  safe-rollback-state:
+    name: trueforge-safe-rollback-state
 
 networks:
   trueforge:

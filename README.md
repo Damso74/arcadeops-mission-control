@@ -2,7 +2,7 @@
 
 > Delegate work to AI agents without delegating unlimited authority.
 
-ArcadeOps Mission Control is a fictional, local operations workflow built on TrueForge for the 2026 Agent Harness Hackathon. The final path is deliberately narrow:
+ArcadeOps Mission Control is a fictional, local incident-response workflow built on TrueForge for the 2026 Agent Harness Hackathon. Its hero mission is deliberately narrow: recover a degraded `checkout-api` by rolling back `v42` to the stable `v41`, without giving the agent open-ended deployment authority.
 
 `MCP inspection -> dynamic Verifier -> generated sandbox validation -> native approval -> governed write -> evidence receipt`
 
@@ -16,26 +16,39 @@ All records are fictional. No ArcadeOps production system, customer account, or 
 | --- | --- | --- |
 | TrueForge 0.1.4 with Postgres and Redis | Verified | PASS |
 | Real Claude model turn | Verified, persisted `TRUEFORGE_MODEL_OK` | PASS |
-| Four real MCP tools | Verified | PASS |
-| Native `@write` approval | Verified Deny and Allow | PASS |
+| Four real Safe Rollback MCP tools | Verified | PASS |
+| Native approval checkpoint | Verified human Allow for `execute_rollback` in the final session | PASS |
 | Executable Authority Contract | Verified authorized write and `AUTHORITY_DENIED` | PASS |
 | Restart recovery | Verified for TrueForge and MCP state | PASS |
-| Dynamic `Verifier` subagent | Verified through persisted child-thread events and MCP calls | PASS |
-| Daytona sandbox execution with bridged MCP reads | Configuration and strict exporter prepared | **PENDING real credential and run** |
+| Dynamic `Verifier` subagent | Verified through persisted child-thread events and two direct MCP calls | PASS |
+| Daytona sandbox execution with bridged MCP reads | Verified with a real Daytona sandbox and `SANDBOX_VALIDATION_PASS` | PASS |
+| Strict integrated Evidence Receipt | 22/22 persisted checks in session `01m0w4epkt6803zxs2awnhgz8s` | PASS |
+| Human-readable Evidence Console | Receipt-backed, responsive, and fail-closed | PASS |
 | Public repository and complete submission PR | [Repository](https://github.com/Damso74/arcadeops-mission-control) and [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1) published | PASS |
-| Qodo review trail | PR ready; Qodo installation pending | **PENDING initial and follow-up reviews** |
+| Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 findings resolved, follow-up reports 0 bugs | PASS |
 | Final three-minute video | Storyboard and local draft available | **PENDING final integrated run** |
 
-The repository must not claim `SUBMISSION_ACCEPTANCE_PASS` until `runner/export_submission_receipt.py` succeeds against a real integrated session. The exporter fails closed when Daytona, sandbox execution, the Verifier, approval, or the authorized write is absent.
+The strict exporter produced `SUBMISSION_ACCEPTANCE_PASS` for persisted session `01m0w4epkt6803zxs2awnhgz8s`. It validated all 22 required links and still fails closed when the degraded precondition, Daytona, read-only sandbox validation, the Verifier, correlated human approval, the authorized write, or the recovered postcondition is absent.
+
+## Evidence Console
+
+The console turns the receipt into one simple answer: what changed, who approved it, and whether every proof is present. It reads the versioned public receipt directly and shows no success state unless the receipt is `SUBMISSION_ACCEPTANCE_PASS` and every verification result is true.
+
+```powershell
+python -m http.server 4173 --bind 127.0.0.1
+```
+
+Open <http://127.0.0.1:4173/evidence_console/>. The first screen stays outcome-focused; the 22 technical checks remain available behind one disclosure.
 
 ## Verified core behavior
 
-- `inspect_records` reads only fictional records.
-- `prepare_status_change` validates the Authority Contract and returns a state-bound change token without mutating data.
-- `apply_status_change` is annotated as a write. TrueForge pauses it and exposes native Allow/Deny controls.
-- A Deny decision leaves state unchanged. A later Allow performs exactly one authorized write.
-- A request for `case-102`, outside the contract, is rejected with `AUTHORITY_DENIED`.
+- `inspect_incident` reads only the fictional incident and service state.
+- `prepare_rollback` validates the Authority Contract and returns a state-bound change token without mutating data.
+- `execute_rollback` is annotated as destructive and is explicitly configured for TrueForge's native Allow/Deny pause.
+- The contract permits exactly one rollback for `INC-2026-042`: `checkout-api` from `v42` to `v41`.
+- A request for `INC-2026-077` or `identity-api`, outside the contract, is rejected with `AUTHORITY_DENIED`.
 - Replayed tokens are rejected and concurrent attempts are all audited.
+- After an allowed rollback, a fresh MCP inspection must prove `v41`, `healthy`, and an error rate at or below the configured threshold.
 - The `Verifier` independently calls the read-only MCP tools and never calls the write tool.
 
 ## Responsibility boundaries
@@ -82,11 +95,15 @@ TRUEFORGE_PROVIDER_TYPE=anthropic
 TRUEFORGE_MODEL_ID=claude-sonnet-5
 TRUEFORGE_MODEL_NAME=Claude Sonnet 5
 TRUEFORGE_MODEL_API_KEY=
-TRUEFORGE_MCP_AUTH_TOKEN=
+TRUEFORGE_MCP_AUTH_TOKEN=<generate-locally>
 DAYTONA_API_KEY=
 ```
 
-Generate `TRUEFORGE_MCP_AUTH_TOKEN` locally with `python -c "import secrets; print(secrets.token_urlsafe(32))"` and paste it only into the ignored file. TrueForge stores it as a redacted MCP authorization header; the MCP container requires the same value and also validates the Authority Contract identity header.
+Generate the MCP bearer locally and keep it only in the ignored file:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
 ### 3. Start and configure the runtime
 
@@ -107,7 +124,7 @@ npm --prefix mcp_server test
 npm --prefix mcp_server audit --omit=dev
 ```
 
-Expected: four workflow tests, ten MCP black-box tests, and no production dependency vulnerability.
+Expected: sixteen Python workflow and console tests, fifteen MCP black-box tests, and no production dependency vulnerability.
 
 ## Integrated acceptance run
 
@@ -117,7 +134,7 @@ Starting this run invokes a real model and can create Daytona resources. It shou
 python runner/start_submission_acceptance.py
 ```
 
-When TrueForge pauses `apply_status_change`, the participant makes the human decision in <http://127.0.0.1:8791>. The script never approves on the participant's behalf.
+When TrueForge pauses `execute_rollback`, the participant makes the human decision in <http://127.0.0.1:8791>. The script never approves on the participant's behalf.
 
 After an allowed run completes:
 
@@ -127,7 +144,7 @@ python runner/export_submission_receipt.py `
   --output evidence/submission-evidence-receipt.json
 ```
 
-The receipt requires persisted proof of all of the following: the final agent, exactly one `Verifier`, the Verifier's real MCP calls, no Verifier write, a Daytona sandbox id, sandbox `exec`, generated code using TrueForge's MCP bridge for both read-only tools, the exact `SANDBOX_VALIDATION_PASS` marker before the write, native approval, a human Allow decision, and exactly one executed write.
+The receipt requires persisted proof of all of the following: the final agent, exactly one `Verifier`, the Verifier's real MCP calls, no Verifier write, a Daytona sandbox id, sandbox `exec`, generated code using TrueForge's MCP bridge for both read-only tools, the exact `SANDBOX_VALIDATION_PASS` marker before the write, native approval, a human Allow decision, exactly one executed rollback, and a post-write inspection proving recovery.
 
 ## Demo and evidence
 
@@ -135,26 +152,20 @@ The receipt requires persisted proof of all of the following: the final agent, e
 - [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md): timed narration and shot list.
 - [AUTHORITY_CONTRACT.md](AUTHORITY_CONTRACT.md): human-readable policy.
 - [mcp_server/authority_contract.json](mcp_server/authority_contract.json): executable policy.
-- [evidence/go-pivot-evidence-receipt.json](evidence/go-pivot-evidence-receipt.json): Deny, Allow, one write and authority denial.
-- [evidence/verifier-experiment-receipt.json](evidence/verifier-experiment-receipt.json): real dynamic Verifier proof.
-- `evidence/submission-evidence-receipt.json`: created only after the real Daytona-integrated acceptance succeeds.
+- [evidence/go-pivot-evidence-receipt.json](evidence/go-pivot-evidence-receipt.json): historical precursor proving Deny, Allow, one write and authority denial on the earlier status-change spike.
+- [evidence/verifier-experiment-receipt.json](evidence/verifier-experiment-receipt.json): historical precursor proving a real dynamic Verifier.
+- [evidence/submission-evidence-receipt.json](evidence/submission-evidence-receipt.json): final real Daytona-integrated acceptance, 22/22 checks.
+- [evidence_console/index.html](evidence_console/index.html): human-readable, receipt-backed Evidence Console.
 
 ## Qodo Code Review Evidence
 
-The complete representative change is public in [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1). Qodo's [initial agentic review](https://github.com/Damso74/arcadeops-mission-control/pull/1#pullrequestreview-5017758934) reported six findings: three high, two medium and one low.
+**Gate satisfied on PR #1.** Qodo found six issues: three high, two medium, and one low. Commit `0adf7f1` replaced forgeable deterministic tokens with random single-use prepared tokens, added fail-closed expiry and caller identity enforcement, derived receipt identities from persisted evidence, prohibited sandbox writes, derived the mission id, and correlated approval, Allow, and execution by tool-call id. Qodo's automatic follow-up against that commit reports **0 bugs** and marks all six findings resolved.
 
-- predictable and replayable change tokens: replaced with random, persisted, expiring, single-use tokens;
-- invalid contract expiry fail-open: malformed dates now deny authority;
-- unenforced agent identity: the MCP boundary now requires a secret bearer plus the contract identity header;
-- hardcoded model evidence: the Verifier receipt now resolves the persisted session agent model;
-- sandbox write not excluded: the receipt requires exactly two direct, literal read-only bridge calls;
-- hardcoded mission evidence: both exporters require one consistent mission observed in calls or responses.
-
-The remediation also correlates native approval, human Allow and the executed write by the same `tool_call_id`. Its local gates are 15 MCP black-box tests, 12 Python workflow tests, a real persisted GO_PIVOT receipt re-export, and zero npm production vulnerabilities. The gate remains open until Qodo completes a follow-up review of the remediation and a human merges PR #1.
+The PR remains intentionally unmerged until the participant performs the required human review and merge. The Safe Rollback and Evidence Console changes will then be published as PR #2 for their own Qodo cycle.
 
 ## Publication status and disclosure
 
-The project is licensed under the [MIT License](LICENSE). The repository and complete PR are public. The PR has not yet received the required Qodo review, been merged, or been submitted to the hackathon.
+The project is licensed under the [MIT License](LICENSE). The repository and complete PR are public. PR #1 has passed CI, GitGuardian, and the Qodo remediation cycle; human merge and the final hackathon submission are still pending.
 
 Claude Code assisted with the initial spike skeleton, MCP hardening, and black-box test design. OpenAI Codex assisted with implementation, runtime integration, execution, verification, correction, and documentation. Damien must review and understand the submitted code before the human merge and submission.
 
