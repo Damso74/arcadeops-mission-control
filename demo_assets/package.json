@@ -1,0 +1,14 @@
+{
+  "name": "arcadeops-demo-assets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "node preview_video.mjs",
+    "render": "node render_video.mjs",
+    "verify": "node verify_video.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

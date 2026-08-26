@@ -161,6 +161,18 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 The renderer source and narration script are versioned. The generated narration audio and rendered video stay ignored because they are publication artifacts; use [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md) to supply a local narration track before rendering.
 
+To reproduce the demo media, save the local narration as `demo_assets/narration-elevenlabs-damien.mp3`, start the repository server shown above, then run:
+
+```powershell
+npm --prefix demo_assets ci
+npm --prefix demo_assets exec playwright install chromium
+npm --prefix demo_assets run preview
+npm --prefix demo_assets run render
+npm --prefix demo_assets run verify -- arcadeops-trueforge-demo-cinematic.webm
+```
+
+The real-time renderer opens Chromium visibly by default because headless Chromium may throttle canvas frames. `DEMO_BASE_URL` and `DEMO_OUTPUT` override the local server and output path without machine-specific source changes.
+
 ## Qodo Code Review Evidence
 
 **Gate satisfied on PR #1.** Qodo found six issues: three high, two medium, and one low. Commit `0adf7f1` replaced forgeable deterministic tokens with random single-use prepared tokens, added fail-closed expiry and caller identity enforcement, derived receipt identities from persisted evidence, prohibited sandbox writes, derived the mission id, and correlated approval, Allow, and execution by tool-call id. Qodo's automatic follow-up against that commit reports **0 bugs** and marks all six findings resolved.

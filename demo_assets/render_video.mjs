@@ -1,11 +1,25 @@
-import { chromium } from "file:///C:/Users/credo/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
 
-const pageUrl = "http://127.0.0.1:4173/demo_assets/video-final.html";
-const outputPath = "C:/Users/credo/Documents/ChatGPT/True Forge/demo_assets/arcadeops-trueforge-demo-cinematic.webm";
+const assetDirectory = path.dirname(fileURLToPath(import.meta.url));
+const baseUrl = (process.env.DEMO_BASE_URL || "http://127.0.0.1:4173").replace(/\/$/, "");
+const pageUrl = `${baseUrl}/demo_assets/video-final.html`;
+const outputPath = path.resolve(
+  process.env.DEMO_OUTPUT || path.join(assetDirectory, "arcadeops-trueforge-demo-cinematic.webm"),
+);
+const headless = process.env.DEMO_HEADLESS === "1";
 
 const browser = await chromium.launch({
-  headless: true,
-  args: ["--autoplay-policy=no-user-gesture-required"],
+  // Headed rendering is the safe default: Chromium can throttle MediaRecorder canvas
+  // frames in headless mode. Set DEMO_HEADLESS=1 only in an environment proven safe.
+  headless,
+  args: [
+    "--autoplay-policy=no-user-gesture-required",
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-renderer-backgrounding",
+  ],
 });
 
 try {

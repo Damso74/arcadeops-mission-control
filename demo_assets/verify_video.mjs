@@ -1,7 +1,12 @@
-import { chromium } from "file:///C:/Users/credo/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
+import path from "node:path";
+import { chromium } from "playwright";
 
 const fileName = process.argv[2] || "arcadeops-trueforge-demo-final.webm";
-const targetUrl = `http://127.0.0.1:4173/demo_assets/${encodeURIComponent(fileName)}`;
+if (path.basename(fileName) !== fileName) {
+  throw new Error("Video input must be a filename inside demo_assets");
+}
+const baseUrl = (process.env.DEMO_BASE_URL || "http://127.0.0.1:4173").replace(/\/$/, "");
+const targetUrl = `${baseUrl}/demo_assets/${encodeURIComponent(fileName)}`;
 const browser = await chromium.launch({
   headless: true,
   args: ["--autoplay-policy=no-user-gesture-required"],
