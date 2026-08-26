@@ -46,7 +46,14 @@ function renderReceipt(receipt) {
   setText('hero-lede', 'An AI operator rolled back one fictional service. It could inspect and prepare freely, but only a human could authorize the final write.');
 
   const sessionLink = document.getElementById('session-link');
-  sessionLink.href = `http://127.0.0.1:8791/sessions/${encodeURIComponent(receipt.session_id)}`;
+  const isLocalRuntime = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
+  if (isLocalRuntime) {
+    sessionLink.href = `http://127.0.0.1:8791/sessions/${encodeURIComponent(receipt.session_id)}`;
+    sessionLink.textContent = 'Open TrueForge session';
+  } else {
+    sessionLink.href = 'https://github.com/Damso74/arcadeops-mission-control#evidence-status';
+    sessionLink.textContent = 'Inspect public evidence';
+  }
 
   const checkList = document.getElementById('check-list');
   checkList.replaceChildren();
