@@ -225,6 +225,7 @@ black-box contract. The same checks run in
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Detailed runtime and trust-boundary design |
 | [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md) | Safe recording and live-demo procedure |
 | [`AUTHORITY_CONTRACT.md`](AUTHORITY_CONTRACT.md) | Human-readable authorization model |
+| [`SUBMISSION.md`](SUBMISSION.md) | Judge-ready project description, limitations and disclosure |
 
 ## Qodo review trail
 
