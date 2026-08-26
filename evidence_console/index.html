@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#11100e">
-    <meta name="description" content="A human-readable proof of one approval-gated AI operation executed by TrueForge.">
+    <meta name="description" content="A human-readable proof of one approval-gated operation executed by TrueForge.">
     <title>ArcadeOps Mission Control</title>
     <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" type="module"></script>
@@ -16,9 +16,15 @@
           <span class="brand-mark" aria-hidden="true">A</span>
           <span>ArcadeOps</span>
         </a>
-        <div class="evidence-state" id="evidence-state" role="status">
-          <span class="state-dot" aria-hidden="true"></span>
-          <span>Checking evidence</span>
+        <div class="topbar-actions">
+          <nav class="quick-links" aria-label="Project links">
+            <a href="https://youtu.be/4SeSywZ2WL0" target="_blank" rel="noreferrer">Watch demo</a>
+            <a href="https://github.com/Damso74/arcadeops-mission-control" target="_blank" rel="noreferrer">Source</a>
+          </nav>
+          <div class="evidence-state" id="evidence-state" role="status" aria-live="polite">
+            <span class="state-dot" aria-hidden="true"></span>
+            <span>Checking evidence</span>
+          </div>
         </div>
       </header>
 
@@ -27,8 +33,8 @@
         <h1 id="page-title"><span id="headline-primary">Checking evidence.</span><br><span id="headline-secondary">Please wait.</span></h1>
         <p class="lede" id="hero-lede">Recovery claims stay hidden until the complete authority chain has been validated.</p>
         <div class="hero-actions success-only">
-          <a class="primary-action" href="#proof">See the proof <span aria-hidden="true">↓</span></a>
-          <span class="plain-trust">No production access. No hidden writes.</span>
+          <a class="primary-action" href="#proof">View verified path <span aria-hidden="true">↓</span></a>
+          <span class="plain-trust">Fictional demo · no production access.</span>
         </div>
       </section>
 
@@ -60,31 +66,31 @@
       <section class="proof success-only" id="proof" aria-labelledby="proof-title">
         <div class="section-heading">
           <div>
-            <span class="section-label">One safe path</span>
-            <h2 id="proof-title">Nothing happens off the record.</h2>
+            <span class="section-label">Verified workflow</span>
+            <h2 id="proof-title">Six steps. One authorized change.</h2>
           </div>
-          <p>TrueForge persists the whole chain. ArcadeOps accepts the receipt only when every link is present.</p>
+          <p>TrueForge records every step. ArcadeOps accepts the result only when the complete chain can be verified.</p>
         </div>
 
         <ol class="journey" aria-label="Verified operation sequence">
           <li><span>1</span><div><strong>Inspect</strong><small>Incident observed</small></div></li>
-          <li><span>2</span><div><strong>Verify</strong><small>Independent agent</small></div></li>
-          <li><span>3</span><div><strong>Validate</strong><small>Daytona sandbox</small></div></li>
+          <li><span>2</span><div><strong>Check</strong><small>Independent verification</small></div></li>
+          <li><span>3</span><div><strong>Test</strong><small>Isolated sandbox</small></div></li>
           <li class="human-step"><span>4</span><div><strong>Approve</strong><small>Human decision</small></div></li>
-          <li><span>5</span><div><strong>Rollback</strong><small>One governed write</small></div></li>
-          <li><span>6</span><div><strong>Prove</strong><small>Receipt sealed</small></div></li>
+          <li><span>5</span><div><strong>Restore</strong><small>One authorized change</small></div></li>
+          <li><span>6</span><div><strong>Record</strong><small>Receipt verified</small></div></li>
         </ol>
 
         <div class="trust-strip">
           <div><strong id="check-count">20</strong><span>checks passed</span></div>
           <div><strong id="approval-count">1</strong><span>human approval</span></div>
-          <div><strong id="write-count">1</strong><span>governed write</span></div>
-          <div><strong>0</strong><span>scope escapes</span></div>
+          <div><strong id="write-count">1</strong><span>authorized change</span></div>
+          <div><strong>0</strong><span>scope violations</span></div>
         </div>
 
         <details class="evidence-drawer">
           <summary>
-            <span>Open technical evidence</span>
+            <span>Technical details</span>
             <small id="proof-summary">Verified from the persisted TrueForge session</small>
           </summary>
           <div class="evidence-body">
@@ -112,8 +118,8 @@
       </section>
 
       <footer class="success-only">
-        <span>Fictional incident. Real harness evidence.</span>
-        <span>Delegate the work. Never unlimited authority.</span>
+        <span>Fictional incident. Verifiable execution.</span>
+        <span>Human approval before every write.</span>
       </footer>
     </main>
   </body>

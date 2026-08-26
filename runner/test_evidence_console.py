@@ -49,6 +49,8 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertIn("https://github.com/Damso74/arcadeops-mission-control#evidence-status", script)
         self.assertIn("Open TrueForge session", script)
         self.assertIn("Inspect public evidence", script)
+        self.assertIn("Service restored.", script)
+        self.assertIn("stopped for human approval", script)
         self.assertNotIn("innerHTML", script)
         self.assertIn('data-evidence-status="loading"', html)
         self.assertNotIn("Mission complete · human approved", html)

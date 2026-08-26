@@ -34,16 +34,16 @@ function renderReceipt(receipt) {
   setText('approval-count', '1');
   setText('write-count', '1');
   setText('model-name', `${receipt.model_provider}/${receipt.model_name}`);
-  setText('verifier-name', '1 independent child agent');
+  setText('verifier-name', '1 independent verification agent');
   setText('sandbox-name', `${receipt.sandbox_provider} · isolated`);
   setText('authority-name', `${receipt.service_id} · ${serviceBefore.deployed_version} to ${receipt.target_version} · max 1 write`);
   setText('decision-time', `Human Allow · ${evidence.decision.decided_at.slice(11, 19)}`);
   setText('receipt-date', `Sealed ${receipt.generated_at.slice(0, 10)}`);
   setText('proof-summary', `${checkCount}/${checkCount} checks passed`);
-  setText('headline-primary', 'Checkout recovered.');
-  setText('headline-secondary', 'Every step proved.');
-  setText('hero-eyebrow', 'Mission complete · human approved');
-  setText('hero-lede', 'An AI operator rolled back one fictional service. It could inspect and prepare freely, but only a human could authorize the final write.');
+  setText('headline-primary', 'Service restored.');
+  setText('headline-secondary', 'Change verified.');
+  setText('hero-eyebrow', 'Recovery verified · human approved');
+  setText('hero-lede', 'ArcadeOps inspected the incident, tested the rollback in isolation, and stopped for human approval before changing anything.');
 
   const sessionLink = document.getElementById('session-link');
   const isLocalRuntime = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
@@ -65,7 +65,7 @@ function renderReceipt(receipt) {
 
   const state = document.getElementById('evidence-state');
   state.dataset.status = 'pass';
-  state.lastElementChild.textContent = 'Evidence verified';
+  state.lastElementChild.textContent = 'Receipt verified';
   document.getElementById('console-root').dataset.evidenceStatus = 'pass';
 }
 
