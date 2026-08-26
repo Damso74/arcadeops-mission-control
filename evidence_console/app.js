@@ -77,7 +77,6 @@ function renderReceipt(receipt) {
   const checkCount = Object.keys(checks).length;
   const inspections = Array.isArray(receipt.precondition_inspections) ? receipt.precondition_inspections : [receipt.precondition_inspections];
   const parentInspection = inspections.find(item => item.thread_id === 'main') || first(receipt.precondition_inspections);
-  const verifierInspection = inspections.find(item => item.thread_id !== 'main');
   const sandboxCalls = Array.isArray(receipt.sandbox_exec_calls) ? receipt.sandbox_exec_calls : [receipt.sandbox_exec_calls];
   const sandboxValidation = sandboxCalls.find(item => item.validation_pass_observed);
   const decision = first(receipt.human_decisions);
@@ -98,7 +97,7 @@ function renderReceipt(receipt) {
   setText('write-detail', `One authorized ${serviceBefore.deployed_version} → ${service.deployed_version} change was applied.`);
   setText('recovery-detail', `Error rate fell to ${service.error_rate_percent}%, below the ${service.healthy_threshold_percent}% threshold.`);
   setText('detected-time', formatTime(parentInspection?.responded_at));
-  setText('verifier-time', formatTime(verifierInspection?.responded_at));
+  setText('verifier-time', formatTime(evidence.verifierRespondedAt));
   setText('sandbox-time', formatTime(sandboxValidation?.responded_at));
   setText('approval-time', formatTime(decision?.decided_at));
   setText('write-time', formatTime(write.responded_at));

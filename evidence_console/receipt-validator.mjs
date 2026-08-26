@@ -261,5 +261,6 @@ export function validateReceipt(receipt) {
     precondition,
     postcondition,
     decision,
+    verifierRespondedAt: new Date(Math.max(...verifierResponseTimes)).toISOString(),
   };
 }
