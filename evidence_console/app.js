@@ -72,7 +72,7 @@ const replaySteps = [
     node: 0,
     state: 'incident',
     title: 'Incident detected',
-    detail: 'The checkout service is degraded after a deployment.',
+    detail: 'Validated incident context loaded from the receipt.',
     status: 'Incident observed',
   },
   {
@@ -286,6 +286,9 @@ function renderReceipt(receipt) {
   const sandboxCalls = Array.isArray(receipt.sandbox_exec_calls) ? receipt.sandbox_exec_calls : [receipt.sandbox_exec_calls];
   const sandboxValidation = sandboxCalls.find(item => item.validation_pass_observed);
   const decision = first(receipt.human_decisions);
+
+  replaySteps[0].detail = `${receipt.service_id} is degraded on ${serviceBefore.deployed_version} at ${serviceBefore.error_rate_percent}% errors.`;
+  replaySteps[1].detail = `The agent proposes a scoped rollback to ${receipt.target_version} using read-only MCP calls.`;
 
   setText('page-title', 'Agents can prepare. Humans authorize.');
   setText('record-summary', `ArcadeOps validated a rollback for ${receipt.service_id} in Daytona, paused at human approval, executed exactly once, and sealed ${checkCount} verification checks.`);

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import unittest
 from html.parser import HTMLParser
@@ -58,12 +59,37 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertIn("Receipt verified", script)
         self.assertIn("Waiting for human approval", script)
         self.assertIn("Exactly one write unlocked", script)
+        self.assertIn("receipt.service_id", script)
+        self.assertIn("serviceBefore.deployed_version", script)
+        self.assertNotIn("checkout service is degraded", script)
+        self.assertNotIn("after a deployment", script)
         self.assertIn("Deterministic replay from persisted evidence", html)
         self.assertIn('aria-live="polite"', html)
         self.assertNotIn("innerHTML", script)
         self.assertIn('data-evidence-status="loading"', html)
         self.assertNotIn("Agents can prepare. Humans authorize.", html)
         self.assertNotIn("SUBMISSION_ACCEPTANCE_PASS", html)
+
+    def test_small_label_contrast_meets_wcag_aa(self) -> None:
+        css = (ROOT / "evidence_console" / "styles.css").read_text(encoding="utf-8")
+
+        def token(name: str) -> str:
+            match = re.search(rf"--{name}:\s*(#[0-9a-fA-F]{{6}})", css)
+            self.assertIsNotNone(match, f"missing CSS token --{name}")
+            return match.group(1)
+
+        def luminance(color: str) -> float:
+            channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+            linear = [value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4 for value in channels]
+            return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+        def contrast(foreground: str, background: str) -> float:
+            values = sorted((luminance(foreground), luminance(background)), reverse=True)
+            return (values[0] + 0.05) / (values[1] + 0.05)
+
+        subtle = token("subtle")
+        for surface in ("page", "surface", "surface-raised", "surface-soft"):
+            self.assertGreaterEqual(contrast(subtle, token(surface)), 4.5, surface)
 
     def test_receipt_validator_rejects_incomplete_or_uncorrelated_evidence(self) -> None:
         result = subprocess.run(
