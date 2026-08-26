@@ -26,7 +26,7 @@ All records are fictional. No ArcadeOps production system, customer account, or 
 | Human-readable Evidence Console | Receipt-backed, responsive, and fail-closed | PASS |
 | Public repository and complete submission PRs | [Repository](https://github.com/Damso74/arcadeops-mission-control), [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1), and [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) published and human-merged | PASS |
 | Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 resolved; [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2): 11/11 findings from three passes remediated | PASS |
-| Final three-minute video | 168-second, 1280×720 render with audio and six distinct visual checkpoints verified | PASS — upload pending |
+| Final demo video | 118-second, 1280×720 render with natural-speed audio and six distinct visual checkpoints verified | PASS — upload pending |
 
 The strict exporter produced `SUBMISSION_ACCEPTANCE_PASS` for persisted session `01m0w4epkt6803zxs2awnhgz8s`. It validated all 22 required links and still fails closed when the degraded precondition, Daytona, read-only sandbox validation, the Verifier, correlated human approval, the authorized write, or the recovered postcondition is absent.
 
@@ -150,7 +150,7 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 ## Demo and evidence
 
-- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md): three-minute capture sequence.
+- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md): concise capture sequence for the final demo.
 - [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md): timed narration and shot list.
 - [AUTHORITY_CONTRACT.md](AUTHORITY_CONTRACT.md): human-readable policy.
 - [mcp_server/authority_contract.json](mcp_server/authority_contract.json): executable policy.

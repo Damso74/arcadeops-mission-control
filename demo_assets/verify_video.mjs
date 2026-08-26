@@ -31,8 +31,8 @@ try {
       audioTracks: video.captureStream().getAudioTracks().length,
     };
   });
-  if (before.duration < 165 || before.duration > 180) {
-    throw new Error(`Duration check failed: expected 165-180 seconds, received ${before.duration}`);
+  if (before.duration < 105 || before.duration > 130) {
+    throw new Error(`Duration check failed: expected 105-130 seconds, received ${before.duration}`);
   }
   if (before.width !== 1280 || before.height !== 720) {
     throw new Error(`Resolution check failed: expected 1280x720, received ${before.width}x${before.height}`);

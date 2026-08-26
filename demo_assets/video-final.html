@@ -25,7 +25,7 @@ const narrationSource = requestedNarration && /^[a-zA-Z0-9._-]+\.(?:mp3|wav|ogg|
   ? requestedNarration
   : 'narration-final.wav';
 audio.src = narrationSource;
-const playbackRate = 1.14;
+const playbackRate = 1;
 audio.preservesPitch = true;
 audio.playbackRate = playbackRate;
 const button = document.querySelector('#record');
@@ -200,8 +200,8 @@ function drawScene(index, progress, alpha) {
     const enter = easeOut(progress * 2.4);
     drawMark(72, 178 + (1 - enter) * 22, 124, enter);
     text(['ARCADEOPS'], 238, 232, 22, copperLight, 820);
-    text(['Approval-gated', 'AI operations.'], 238, 302, 64, ink, 560, 1.02, 'Georgia');
-    text(['The agent does the work. The human keeps the authority.'], 242, 458, 24, '#c2b9ae', 500);
+    text(['The agent can act.', 'You keep authority.'], 238, 302, 61, ink, 560, 1.02, 'Georgia');
+    text(['One bounded mission. One human decision. One verifiable result.'], 242, 458, 23, '#c2b9ae', 500);
     let chipX = 242;
     ['TRUEFORGE', 'MCP', 'VERIFIER', 'DAYTONA', 'HUMAN GATE'].forEach(label => { chipX += drawPill(label, chipX, 510, copperLight, enter) + 10; });
     ctx.strokeStyle = 'rgba(216,138,76,0.45)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(1080, 340, 110 + Math.sin(progress * Math.PI) * 12, 0, Math.PI * 2); ctx.stroke();
@@ -237,18 +237,18 @@ function drawScene(index, progress, alpha) {
     const enter = easeOut(progress * 2.2);
     drawMark(568, 108 + (1 - enter) * 18, 144, enter);
     ctx.textAlign = 'center';
-    text(['TrueForge supplies the harness.'], 640, 328, 45, ink, 560, 1.1, 'Georgia');
-    text(['ArcadeOps makes authority enforceable and evidence verifiable.'], 640, 390, 25, '#c2b9ae', 520);
+    text(['Capability for the agent.'], 640, 316, 45, ink, 560, 1.1, 'Georgia');
+    text(['Authority for the human. Proof for everyone.'], 640, 386, 27, '#c2b9ae', 520);
     drawStepRail(4, enter);
     ctx.textAlign = 'center';
-    text(['DELEGATE THE WORK · NEVER UNLIMITED AUTHORITY'], 640, 548, 18, copperLight, 820);
+    text(['LET AGENTS ACT · KEEP AUTHORITY HUMAN'], 640, 548, 18, copperLight, 820);
     ctx.textAlign = 'left';
   }
   ctx.restore();
 }
 
 function draw() {
-  const duration = Number.isFinite(audio.duration) ? audio.duration : 192;
+  const duration = Number.isFinite(audio.duration) ? audio.duration : 117;
   const liveTime = audio.currentTime || 0;
   const ratio = previewRatio ?? clamp(liveTime / duration);
   const t = previewRatio === null ? liveTime : previewRatio * duration;
@@ -283,7 +283,7 @@ Promise.all([
     image.onerror = () => reject(new Error(`${imageSources[index]} is missing`));
   }))
 ]).then(() => {
-  if (audio.duration < 165 || audio.duration > 200) throw new Error(`Narration duration ${audio.duration.toFixed(1)}s is outside 165-200s`);
+  if (audio.duration < 105 || audio.duration > 130) throw new Error(`Narration duration ${audio.duration.toFixed(1)}s is outside 105-130s`);
   button.disabled = false;
   status.textContent = `Ready - verified assets loaded - ${Math.round(audio.duration / playbackRate)} seconds at ${playbackRate.toFixed(2)}x`;
 }).catch(error => status.textContent = `FINAL VIDEO BLOCKED: ${error.message}`);
