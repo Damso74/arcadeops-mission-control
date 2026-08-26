@@ -3,123 +3,182 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#11100e">
-    <meta name="description" content="A human-readable proof of one approval-gated operation executed by TrueForge.">
-    <title>ArcadeOps Mission Control</title>
+    <meta name="theme-color" content="#f4f3ef">
+    <meta name="description" content="A human-readable review of one approval-gated operation executed by TrueForge.">
+    <title>ArcadeOps Mission Review</title>
     <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" type="module"></script>
   </head>
   <body>
-    <main class="shell" id="console-root" data-evidence-status="loading" aria-labelledby="page-title">
-      <header class="topbar">
-        <a class="brand" href="#top" aria-label="ArcadeOps Mission Control home">
-          <span class="brand-mark" aria-hidden="true">A</span>
+    <main class="app-shell" id="console-root" data-evidence-status="loading" aria-labelledby="page-title">
+      <header class="app-bar">
+        <a class="brand" href="#top" aria-label="ArcadeOps Mission Review home">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M6.5 25 16 5l9.5 20h-5.2l-1.5-3.8h-5.6l1.8-4.3h2.1L16 14l-4.6 11H6.5Z"/>
+          </svg>
           <span>ArcadeOps</span>
         </a>
-        <div class="topbar-actions">
-          <nav class="quick-links" aria-label="Project links">
-            <a href="https://youtu.be/4SeSywZ2WL0" target="_blank" rel="noreferrer">Watch demo</a>
-            <a href="https://github.com/Damso74/arcadeops-mission-control" target="_blank" rel="noreferrer">Source</a>
-          </nav>
-          <div class="evidence-state" id="evidence-state" role="status" aria-live="polite">
-            <span class="state-dot" aria-hidden="true"></span>
-            <span>Checking evidence</span>
-          </div>
+        <span class="environment">Demo environment</span>
+        <nav class="project-links" aria-label="Project links">
+          <a href="https://youtu.be/4SeSywZ2WL0" target="_blank" rel="noreferrer">Demo</a>
+          <a href="https://github.com/Damso74/arcadeops-mission-control" target="_blank" rel="noreferrer">Source</a>
+        </nav>
+        <div class="receipt-state" id="evidence-state" role="status" aria-live="polite">
+          <span class="state-dot" aria-hidden="true"></span>
+          <span>Checking receipt</span>
         </div>
       </header>
 
-      <section class="hero" id="top">
-        <div class="eyebrow" id="hero-eyebrow">Verifying persisted evidence</div>
-        <h1 id="page-title"><span id="headline-primary">Checking evidence.</span><br><span id="headline-secondary">Please wait.</span></h1>
-        <p class="lede" id="hero-lede">Recovery claims stay hidden until the complete authority chain has been validated.</p>
-        <div class="hero-actions success-only">
-          <a class="primary-action" href="#proof">View verified path <span aria-hidden="true">↓</span></a>
-          <span class="plain-trust">Fictional demo · no production access.</span>
-        </div>
-      </section>
-
-      <section class="outcome-card success-only" aria-label="Recovery result">
-        <div class="outcome-copy">
-          <span class="section-label">Recovery result</span>
-          <div class="service-line">
-            <span class="health-icon" aria-hidden="true">✓</span>
-            <div>
-              <strong id="service-name">checkout-api</strong>
-              <span id="incident-name">INC-2026-042</span>
+      <section class="record-card" id="top">
+        <div class="record-layout">
+          <div class="record-copy">
+            <div class="record-eyebrow" id="record-eyebrow">Verifying persisted evidence</div>
+            <div class="record-badges success-only">
+              <span class="status-badge">Completed</span>
+              <span>Fictional data</span>
             </div>
-          </div>
-        </div>
-        <div class="metric">
-          <span>Version</span>
-          <strong><s id="from-version">v42</s> <b aria-hidden="true">→</b> <em id="to-version">v41</em></strong>
-        </div>
-        <div class="metric">
-          <span>Error rate</span>
-          <strong><s id="before-rate">18.4%</s> <b aria-hidden="true">→</b> <em id="after-rate">0.7%</em></strong>
-        </div>
-        <div class="metric">
-          <span>Status</span>
-          <strong class="healthy">Healthy</strong>
-        </div>
-      </section>
-
-      <section class="proof success-only" id="proof" aria-labelledby="proof-title">
-        <div class="section-heading">
-          <div>
-            <span class="section-label">Verified workflow</span>
-            <h2 id="proof-title">Six steps. One authorized change.</h2>
-          </div>
-          <p>TrueForge records every step. ArcadeOps accepts the result only when the complete chain can be verified.</p>
-        </div>
-
-        <ol class="journey" aria-label="Verified operation sequence">
-          <li><span>1</span><div><strong>Inspect</strong><small>Incident observed</small></div></li>
-          <li><span>2</span><div><strong>Check</strong><small>Independent verification</small></div></li>
-          <li><span>3</span><div><strong>Test</strong><small>Isolated sandbox</small></div></li>
-          <li class="human-step"><span>4</span><div><strong>Approve</strong><small>Human decision</small></div></li>
-          <li><span>5</span><div><strong>Restore</strong><small>One authorized change</small></div></li>
-          <li><span>6</span><div><strong>Record</strong><small>Receipt verified</small></div></li>
-        </ol>
-
-        <div class="trust-strip">
-          <div><strong id="check-count">20</strong><span>checks passed</span></div>
-          <div><strong id="approval-count">1</strong><span>human approval</span></div>
-          <div><strong id="write-count">1</strong><span>authorized change</span></div>
-          <div><strong>0</strong><span>scope violations</span></div>
-        </div>
-
-        <details class="evidence-drawer">
-          <summary>
-            <span>Technical details</span>
-            <small id="proof-summary">Verified from the persisted TrueForge session</small>
-          </summary>
-          <div class="evidence-body">
-            <dl class="evidence-facts">
-              <div><dt>Runtime</dt><dd>TrueForge 0.1.4</dd></div>
-              <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
-              <div><dt>Verifier</dt><dd id="verifier-name">1 independent child agent</dd></div>
-              <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona · isolated</dd></div>
-              <div><dt>Authority</dt><dd id="authority-name">Verified from receipt</dd></div>
-              <div><dt>Decision</dt><dd id="decision-time">Human Allow · correlated</dd></div>
-            </dl>
-            <div class="check-panel">
-              <div class="check-panel-heading">
-                <div><span class="checkmark" aria-hidden="true">✓</span><strong>Receipt accepted</strong></div>
-                <span id="receipt-date">Persisted evidence</span>
-              </div>
-              <ul id="check-list" aria-label="Receipt verification checks"></ul>
-            </div>
-            <div class="evidence-actions">
-              <a id="session-link" class="secondary-action" href="http://127.0.0.1:8791/" target="_blank" rel="noreferrer">Open TrueForge session</a>
+            <h1 id="page-title">Checking receipt</h1>
+            <p class="record-summary" id="record-summary">No operational result is shown until the complete receipt passes validation.</p>
+            <div class="record-actions success-only">
+              <a class="primary-action" href="#execution">Inspect execution</a>
               <a class="text-action" href="../evidence/submission-evidence-receipt.json" target="_blank" rel="noreferrer">View raw receipt</a>
             </div>
+
+            <dl class="impact-grid success-only" aria-label="Recovery impact">
+              <div>
+                <dt>Error rate</dt>
+                <dd><s id="before-rate">18.4%</s><span aria-hidden="true">→</span><strong id="after-rate">0.7%</strong></dd>
+              </div>
+              <div>
+                <dt>Version</dt>
+                <dd><s id="from-version">v42</s><span aria-hidden="true">→</span><strong id="to-version">v41</strong></dd>
+              </div>
+              <div>
+                <dt>Service status</dt>
+                <dd><strong class="healthy">Healthy</strong></dd>
+              </div>
+            </dl>
           </div>
-        </details>
+
+          <aside class="receipt-card success-only" aria-label="Receipt summary">
+            <div class="receipt-card-head">
+              <span>Receipt</span>
+              <span class="valid-badge"><span aria-hidden="true">✓</span> Valid</span>
+            </div>
+            <strong class="receipt-score"><span id="receipt-check-count">22</span>/<span id="receipt-check-total">22</span></strong>
+            <span class="receipt-score-label">verification checks passed</span>
+            <dl class="receipt-stats">
+              <div><dt>Authorized writes</dt><dd><span id="write-count">1</span> / 1</dd></div>
+              <div><dt>Scope violations</dt><dd>0</dd></div>
+              <div><dt>Generated</dt><dd id="receipt-date">2026-08-25</dd></div>
+            </dl>
+            <a href="#receipt">Inspect receipt <span aria-hidden="true">↓</span></a>
+          </aside>
+        </div>
       </section>
 
+      <div class="content-grid success-only">
+        <section class="panel execution-panel" id="execution" aria-labelledby="execution-title">
+          <header class="panel-heading">
+            <div>
+              <span class="section-label">Execution</span>
+              <h2 id="execution-title">What actually happened</h2>
+            </div>
+            <span class="panel-meta">6 verified events</span>
+          </header>
+
+          <ol class="timeline" aria-label="Verified execution timeline">
+            <li>
+              <span class="timeline-marker" aria-hidden="true">✓</span>
+              <div class="timeline-copy"><strong>Incident detected</strong><p id="detected-detail">Service degraded after deployment.</p></div>
+              <div class="timeline-meta"><time id="detected-time">09:37:46</time><span>MCP</span></div>
+            </li>
+            <li>
+              <span class="timeline-marker" aria-hidden="true">✓</span>
+              <div class="timeline-copy"><strong>Independent verification passed</strong><p>Verifier confirmed the incident, service and rollback target.</p></div>
+              <div class="timeline-meta"><time id="verifier-time">09:38:04</time><span>TrueForge</span></div>
+            </li>
+            <li>
+              <span class="timeline-marker" aria-hidden="true">✓</span>
+              <div class="timeline-copy"><strong>Sandbox validation passed</strong><p>Generated checks returned the required validation marker.</p></div>
+              <div class="timeline-meta"><time id="sandbox-time">09:38:40</time><span>Daytona</span></div>
+            </li>
+            <li class="approval-event">
+              <span class="timeline-marker" aria-hidden="true">●</span>
+              <div class="timeline-copy"><strong>Human approval granted</strong><p>The write remained paused until the operator selected Allow.</p></div>
+              <div class="timeline-meta"><time id="approval-time">09:53:35</time><span>Human</span></div>
+            </li>
+            <li>
+              <span class="timeline-marker" aria-hidden="true">✓</span>
+              <div class="timeline-copy"><strong>Rollback executed · 1/1</strong><p id="write-detail">One authorized version change was applied.</p></div>
+              <div class="timeline-meta"><time id="write-time">09:53:35</time><span>MCP</span></div>
+            </li>
+            <li>
+              <span class="timeline-marker" aria-hidden="true">✓</span>
+              <div class="timeline-copy"><strong>Recovery confirmed</strong><p id="recovery-detail">The error rate returned below the healthy threshold.</p></div>
+              <div class="timeline-meta"><time id="recovery-time">09:53:38</time><span>TrueForge</span></div>
+            </li>
+          </ol>
+        </section>
+
+        <aside class="side-column" aria-label="Decision and guardrails">
+          <section class="panel decision-panel">
+            <span class="section-label">Decision</span>
+            <div class="decision-icon" aria-hidden="true">✓</div>
+            <h2>Human approval granted</h2>
+            <p id="decision-copy">Allow recorded before the only write.</p>
+            <dl class="compact-facts">
+              <div><dt>Decision</dt><dd>Allow</dd></div>
+              <div><dt>Write limit</dt><dd>1</dd></div>
+              <div><dt>Writes used</dt><dd>1</dd></div>
+            </dl>
+          </section>
+
+          <section class="panel scope-panel">
+            <header class="panel-heading compact"><h2>Authority scope</h2><span>Locked</span></header>
+            <dl class="scope-list">
+              <div><dt>Mission</dt><dd id="mission-id">TF-SAFE-ROLLBACK-001</dd></div>
+              <div><dt>Incident</dt><dd id="incident-name">INC-2026-042</dd></div>
+              <div><dt>Service</dt><dd id="service-name">checkout-api</dd></div>
+              <div><dt>Change</dt><dd id="authority-change">v42 → v41</dd></div>
+            </dl>
+            <div class="scope-guardrails">
+              <h3>Guardrails</h3>
+              <ul>
+                <li><span aria-hidden="true">✓</span> Read-only before approval</li>
+                <li><span aria-hidden="true">✓</span> Isolated validation</li>
+                <li><span aria-hidden="true">✓</span> One scoped write</li>
+              </ul>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <details class="panel receipt-details success-only" id="receipt">
+        <summary>
+          <span><strong>Receipt and checks</strong><small>Runtime metadata and grouped verification results</small></span>
+          <span class="summary-status">Valid · <b id="proof-summary">22/22</b></span>
+        </summary>
+        <div class="receipt-body">
+          <dl class="technical-facts">
+            <div><dt>Runtime</dt><dd>TrueForge 0.1.4</dd></div>
+            <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
+            <div><dt>Verifier</dt><dd id="verifier-name">Independent verification</dd></div>
+            <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona · isolated</dd></div>
+            <div><dt>Authority</dt><dd id="authority-name">Receipt bound</dd></div>
+            <div><dt>Decision</dt><dd id="decision-time">Human Allow · correlated</dd></div>
+          </dl>
+          <div class="check-groups" id="check-groups" aria-label="Grouped receipt verification checks"></div>
+          <div class="receipt-actions">
+            <a id="session-link" class="secondary-action" href="http://127.0.0.1:8791/" target="_blank" rel="noreferrer">Open TrueForge session</a>
+            <a class="text-action" href="../evidence/submission-evidence-receipt.json" target="_blank" rel="noreferrer">View raw receipt</a>
+          </div>
+        </div>
+      </details>
+
       <footer class="success-only">
-        <span>Fictional incident. Verifiable execution.</span>
-        <span>Human approval before every write.</span>
+        <span>Demo data only. No production systems connected.</span>
+        <span>Evidence reconstructed from the persisted TrueForge session.</span>
       </footer>
     </main>
   </body>

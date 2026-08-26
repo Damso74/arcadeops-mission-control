@@ -39,8 +39,8 @@ class EvidenceConsoleTests(unittest.TestCase):
             "console-root",
             "page-title",
             "evidence-state",
-            "proof",
-            "check-list",
+            "execution",
+            "check-groups",
             "session-link",
         }
         self.assertTrue(required_ids.issubset(parser.ids))
@@ -49,12 +49,13 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertIn("https://github.com/Damso74/arcadeops-mission-control#evidence-status", script)
         self.assertIn("Open TrueForge session", script)
         self.assertIn("Inspect public evidence", script)
-        self.assertIn("Service restored.", script)
-        self.assertIn("stopped for human approval", script)
+        self.assertIn("Rollback completed", script)
+        self.assertIn("after human approval", script)
+        self.assertIn("Receipt valid", script)
         self.assertNotIn("innerHTML", script)
         self.assertIn('data-evidence-status="loading"', html)
-        self.assertNotIn("Mission complete · human approved", html)
-        self.assertNotIn("Checkout recovered.", html)
+        self.assertNotIn("Rollback completed", html)
+        self.assertNotIn("SUBMISSION_ACCEPTANCE_PASS", html)
 
     def test_receipt_validator_rejects_incomplete_or_uncorrelated_evidence(self) -> None:
         result = subprocess.run(
