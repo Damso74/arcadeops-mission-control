@@ -24,15 +24,17 @@ All records are fictional. No ArcadeOps production system, customer account, or 
 | Daytona sandbox execution with bridged MCP reads | Verified with a real Daytona sandbox and `SANDBOX_VALIDATION_PASS` | PASS |
 | Strict integrated Evidence Receipt | 22/22 persisted checks in session `01m0w4epkt6803zxs2awnhgz8s` | PASS |
 | Human-readable Evidence Console | Receipt-backed, responsive, and fail-closed | PASS |
-| Public repository and complete submission PRs | [Repository](https://github.com/Damso74/arcadeops-mission-control), [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1), and [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) published | PASS |
+| Public repository and complete submission PRs | [Repository](https://github.com/Damso74/arcadeops-mission-control), [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1), and [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) published and human-merged | PASS |
 | Qodo review trail | [PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1): 6/6 resolved; [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2): 11/11 findings from three passes remediated | PASS |
-| Final three-minute video | 169-second, 1280×720 final render verified locally | PASS — upload pending |
+| Final demo video | 118-second, 1280×720 render with natural-speed audio and six distinct visual checkpoints verified | PASS — upload pending |
 
 The strict exporter produced `SUBMISSION_ACCEPTANCE_PASS` for persisted session `01m0w4epkt6803zxs2awnhgz8s`. It validated all 22 required links and still fails closed when the degraded precondition, Daytona, read-only sandbox validation, the Verifier, correlated human approval, the authorized write, or the recovered postcondition is absent.
 
 ## Evidence Console
 
 The console turns the receipt into one simple answer: what changed, who approved it, and whether every proof is present. It reads the versioned public receipt directly and shows no success state unless the receipt is `SUBMISSION_ACCEPTANCE_PASS` and every verification result is true.
+
+Public console: <https://damso74.github.io/arcadeops-mission-control/evidence_console/>
 
 ```powershell
 python -m http.server 4173 --bind 127.0.0.1
@@ -148,7 +150,7 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 ## Demo and evidence
 
-- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md): three-minute capture sequence.
+- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md): concise capture sequence for the final demo.
 - [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md): timed narration and shot list.
 - [AUTHORITY_CONTRACT.md](AUTHORITY_CONTRACT.md): human-readable policy.
 - [mcp_server/authority_contract.json](mcp_server/authority_contract.json): executable policy.
@@ -157,17 +159,32 @@ The receipt requires persisted proof of all of the following: the final agent, e
 - [evidence/submission-evidence-receipt.json](evidence/submission-evidence-receipt.json): final real Daytona-integrated acceptance, 22/22 checks.
 - [evidence_console/index.html](evidence_console/index.html): human-readable, receipt-backed Evidence Console.
 
+The renderer source and narration script are versioned. The generated narration audio and rendered video stay ignored because they are publication artifacts; use [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md) to supply a local narration track before rendering.
+
+To reproduce the demo media with the built-in Windows narrator, start the repository server shown above, then run:
+
+```powershell
+npm --prefix demo_assets ci
+npm --prefix demo_assets exec playwright install chromium
+powershell -NoProfile -ExecutionPolicy Bypass -File demo_assets/render_narration.ps1
+npm --prefix demo_assets run preview
+npm --prefix demo_assets run render
+npm --prefix demo_assets run verify
+```
+
+`render_narration.ps1` and the renderer share the default `demo_assets/narration-final.wav` path. The calibrated Windows narration defaults produce the same target window as the final track, measure the generated WAVE duration, and fail closed outside 105–130 seconds. To use an alternative local narration such as the ignored ElevenLabs track, set `$env:DEMO_NARRATION='narration-elevenlabs-damien.mp3'` before previewing or rendering. The real-time renderer opens Chromium visibly by default because headless Chromium may throttle canvas frames. `DEMO_BASE_URL` and `DEMO_OUTPUT` override the local server and output path without machine-specific source changes.
+
 ## Qodo Code Review Evidence
 
 **Gate satisfied on PR #1.** Qodo found six issues: three high, two medium, and one low. Commit `0adf7f1` replaced forgeable deterministic tokens with random single-use prepared tokens, added fail-closed expiry and caller identity enforcement, derived receipt identities from persisted evidence, prohibited sandbox writes, derived the mission id, and correlated approval, Allow, and execution by tool-call id. Qodo's automatic follow-up against that commit reports **0 bugs** and marks all six findings resolved.
 
-The PR remains intentionally unmerged until the participant performs the required human review and merge. [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) is already open as a stacked PR and contains the Safe Rollback, strict Receipt, and Evidence Console. Across three PR #2 passes, Qodo found eleven issues; all eleven are covered by the current remediation and adversarial tests.
+[PR #1](https://github.com/Damso74/arcadeops-mission-control/pull/1) was human-merged on August 25 after its CI, GitGuardian, Qodo review, remediation, and follow-up review passed. [PR #2](https://github.com/Damso74/arcadeops-mission-control/pull/2) was then rebased onto `main`, reviewed, and human-merged with the Safe Rollback, strict Receipt, and Evidence Console. Across three PR #2 passes, Qodo found eleven issues; all eleven were remediated and covered by adversarial tests before merge.
 
 ## Publication status and disclosure
 
-The project is licensed under the [MIT License](LICENSE). The repository and both PRs are public. PR #1 has passed CI, GitGuardian, and the Qodo remediation cycle; PR #2 contains the completed product and its Qodo remediation. Human merge and the final hackathon submission are still pending.
+The project is licensed under the [MIT License](LICENSE). The repository and both human-merged PRs are public. PR #1 and PR #2 passed CI, GitGuardian, and their Qodo remediation cycles. Only the final publication and hackathon submission steps remain.
 
-Claude Code assisted with the initial spike skeleton, MCP hardening, and black-box test design. OpenAI Codex assisted with implementation, runtime integration, execution, verification, correction, and documentation. Damien must review and understand the submitted code before the human merge and submission.
+Claude Code assisted with the initial spike skeleton, MCP hardening, and black-box test design. OpenAI Codex assisted with implementation, runtime integration, execution, verification, correction, and documentation. Damien reviewed the merged changes and must understand and be able to explain the final submitted project.
 
 Official rules: <https://www.wemakedevs.org/hackathons/trueforge/rules>
 

@@ -32,7 +32,9 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: mcp_server/package-lock.json
+          cache-dependency-path: |
+            mcp_server/package-lock.json
+            demo_assets/package-lock.json
 
       - name: Run workflow and Evidence Console tests
         run: python -m unittest discover -s runner -p "test_*.py" -v
@@ -48,3 +50,12 @@ jobs:
       - name: Audit production dependencies
         working-directory: mcp_server
         run: npm audit --omit=dev --audit-level=high
+
+      - name: Validate portable demo tooling
+        working-directory: demo_assets
+        run: |
+          npm ci --ignore-scripts
+          node --check preview_video.mjs
+          node --check render_video.mjs
+          node --check verify_video.mjs
+          npm audit --audit-level=high

@@ -11,7 +11,7 @@
 </style>
 <main>
   <canvas id="stage" width="1280" height="720"></canvas>
-  <audio id="narration" src="narration-final.wav" preload="auto"></audio>
+  <audio id="narration" preload="auto"></audio>
   <button id="record" disabled>Record final WebM</button>
   <div id="status">Loading verified local assets...</div>
 </main>
@@ -20,6 +20,14 @@
 const canvas = document.querySelector('#stage');
 const ctx = canvas.getContext('2d');
 const audio = document.querySelector('#narration');
+const requestedNarration = new URLSearchParams(window.location.search).get('audio');
+const narrationSource = requestedNarration && /^[a-zA-Z0-9._-]+\.(?:mp3|wav|ogg|m4a)$/.test(requestedNarration)
+  ? requestedNarration
+  : 'narration-final.wav';
+audio.src = narrationSource;
+const playbackRate = 1;
+audio.preservesPitch = true;
+audio.playbackRate = playbackRate;
 const button = document.querySelector('#record');
 const status = document.querySelector('#status');
 const imageSources = [
@@ -30,55 +38,236 @@ const imageSources = [
   '04-submission-receipt.png'
 ];
 const images = imageSources.map(src => { const image = new Image(); image.src = src; return image; });
+const sceneStops = [0, 0.10, 0.21, 0.36, 0.52, 0.68, 0.81, 0.93, 1];
+const copper = '#d88a4c';
+const copperLight = '#f2b87d';
+const ink = '#f6f0e7';
+const muted = '#aaa197';
+const green = '#7fd5a3';
+const requestedPreviewRaw = new URLSearchParams(window.location.search).get('preview');
+const requestedPreview = requestedPreviewRaw === null ? Number.NaN : Number(requestedPreviewRaw);
+const previewRatio = Number.isFinite(requestedPreview) && requestedPreview >= 0 && requestedPreview <= 1 ? requestedPreview : null;
+
+const clamp = value => Math.max(0, Math.min(1, value));
+const smooth = value => { const p = clamp(value); return p * p * (3 - 2 * p); };
+const easeOut = value => 1 - Math.pow(1 - clamp(value), 3);
 
 function roundedRect(x, y, w, h, radius) {
   ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.fill();
 }
-function text(lines, x, y, size, color = '#f6f0e7', weight = 600, lineHeight = 1.22) {
-  ctx.fillStyle = color; ctx.font = `${weight} ${size}px system-ui`;
+
+function text(lines, x, y, size, color = ink, weight = 600, lineHeight = 1.22, family = 'system-ui') {
+  ctx.fillStyle = color;
+  ctx.font = `${weight} ${size}px ${family}`;
   lines.forEach((line, index) => ctx.fillText(line, x, y + index * size * lineHeight));
 }
-function drawScreenshot(image) {
-  const top = 132, maxW = 1148, maxH = 492;
-  const scale = Math.min(maxW / image.naturalWidth, maxH / image.naturalHeight);
-  const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
-  ctx.fillStyle = '#ffffff'; roundedRect((1280 - width) / 2 - 8, top - 8, width + 16, height + 16, 14);
-  ctx.drawImage(image, (1280 - width) / 2, top, width, height);
-}
-function draw() {
-  const duration = Number.isFinite(audio.duration) ? audio.duration : 180;
-  const t = audio.currentTime || 0;
-  ctx.fillStyle = '#0f0e0c'; ctx.fillRect(0, 0, 1280, 720);
-  const gradient = ctx.createLinearGradient(0, 0, 1280, 720);
-  gradient.addColorStop(0, '#60371f'); gradient.addColorStop(1, '#14110e');
-  ctx.globalAlpha = 0.7; ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1280, 720); ctx.globalAlpha = 1;
-  text(['ARCADEOPS MISSION CONTROL'], 66, 62, 24, '#f2b87d', 800);
 
-  if (t < duration * 0.09) {
-    text(['Approval-Gated Safe Rollback'], 66, 252, 60, '#ffffff', 800);
-    text(['Delegate the work.', 'Never unlimited authority.'], 70, 338, 31, '#d8cec2', 500, 1.35);
-    text(['TRUEFORGE · MCP · VERIFIER · DAYTONA · HUMAN APPROVAL'], 70, 492, 20, '#f2b87d', 700);
-  } else if (t < duration * 0.20) {
-    text(['Executable Authority Contract'], 66, 126, 42, '#ffffff', 800);
-    ctx.fillStyle = '#171512dd'; roundedRect(66, 172, 1148, 420, 20);
-    text(['Mission: TF-SAFE-ROLLBACK-001', 'Incident: INC-2026-042 · Service: checkout-api', 'Only transition: v42 → stable v41 · Maximum writes: 1', 'Approval required: execute_rollback', 'Forbidden: new deploy · production · external network', 'Postcondition: healthy and error rate ≤ 2.0%'], 112, 235, 27, '#f6f0e7', 600, 1.6);
-  } else if (t < duration * 0.36) {
-    text(['1 · One read-only dynamic Verifier'], 66, 112, 35, '#ffffff', 800); drawScreenshot(images[0]);
-  } else if (t < duration * 0.53) {
-    text(['2 · Generated validation runs in Daytona'], 66, 112, 35, '#ffffff', 800); drawScreenshot(images[1]);
-  } else if (t < duration * 0.70) {
-    text(['3 · TrueForge pauses before the rollback'], 66, 112, 35, '#ffffff', 800); drawScreenshot(images[2]);
-  } else if (t < duration * 0.82) {
-    text(['4 · Recovery is re-inspected. Scope still wins.'], 66, 112, 35, '#ffffff', 800); drawScreenshot(images[3]);
-  } else if (t < duration * 0.94) {
-    text(['5 · Persisted evidence, exported fail-closed'], 66, 112, 35, '#ffffff', 800); drawScreenshot(images[4]);
-  } else {
-    text(['TRUEFORGE PROVIDES THE HARNESS.'], 66, 230, 48, '#ffffff', 800);
-    text(['ARCADEOPS ADDS ENFORCEABLE AUTHORITY', 'AND VERIFIABLE EVIDENCE.'], 70, 326, 31, '#d8cec2', 650, 1.45);
-    text(['DELEGATE THE WORK · NEVER UNLIMITED AUTHORITY'], 70, 500, 22, '#f2b87d', 800);
+function drawBackground(t) {
+  ctx.fillStyle = '#0f0e0c';
+  ctx.fillRect(0, 0, 1280, 720);
+  const glow = ctx.createRadialGradient(1050 + Math.sin(t * 0.025) * 70, 20, 10, 1050, 20, 650);
+  glow.addColorStop(0, 'rgba(216,138,76,0.24)');
+  glow.addColorStop(1, 'rgba(216,138,76,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, 1280, 720);
+  ctx.strokeStyle = 'rgba(246,240,231,0.035)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < 1280; x += 48) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 720); ctx.stroke();
   }
-  ctx.fillStyle = '#2b2119'; ctx.fillRect(0, 708, 1280, 12);
-  ctx.fillStyle = '#d88a4c'; ctx.fillRect(0, 708, 1280 * Math.min(1, t / duration), 12);
+  for (let y = 0; y < 720; y += 48) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1280, y); ctx.stroke();
+  }
+}
+
+function drawMark(x, y, size, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+  gradient.addColorStop(0, 'rgba(216,138,76,0.34)');
+  gradient.addColorStop(1, 'rgba(216,138,76,0.06)');
+  ctx.fillStyle = gradient;
+  roundedRect(x, y, size, size, size * 0.28);
+  ctx.strokeStyle = 'rgba(242,184,125,0.72)';
+  ctx.lineWidth = Math.max(1.5, size * 0.025);
+  ctx.beginPath(); ctx.roundRect(x, y, size, size, size * 0.28); ctx.stroke();
+  ctx.fillStyle = copperLight;
+  ctx.font = `500 ${size * 0.64}px Georgia`;
+  ctx.textAlign = 'center';
+  ctx.fillText('A', x + size / 2, y + size * 0.72);
+  ctx.textAlign = 'left';
+  ctx.restore();
+}
+
+function drawIcon(kind, x, y, size, color = copperLight) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = Math.max(2, size * 0.075);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (kind === 'shield') {
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.5, y); ctx.lineTo(x + size * 0.88, y + size * 0.16);
+    ctx.lineTo(x + size * 0.82, y + size * 0.64); ctx.quadraticCurveTo(x + size * 0.72, y + size * 0.88, x + size * 0.5, y + size);
+    ctx.quadraticCurveTo(x + size * 0.28, y + size * 0.88, x + size * 0.18, y + size * 0.64);
+    ctx.lineTo(x + size * 0.12, y + size * 0.16); ctx.closePath(); ctx.stroke();
+  } else if (kind === 'eye') {
+    ctx.beginPath(); ctx.ellipse(x + size / 2, y + size / 2, size * 0.44, size * 0.26, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + size / 2, y + size / 2, size * 0.10, 0, Math.PI * 2); ctx.fill();
+  } else if (kind === 'terminal') {
+    ctx.strokeRect(x + size * 0.05, y + size * 0.12, size * 0.90, size * 0.72);
+    ctx.beginPath(); ctx.moveTo(x + size * 0.22, y + size * 0.36); ctx.lineTo(x + size * 0.36, y + size * 0.48); ctx.lineTo(x + size * 0.22, y + size * 0.60); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + size * 0.48, y + size * 0.62); ctx.lineTo(x + size * 0.72, y + size * 0.62); ctx.stroke();
+  } else if (kind === 'check') {
+    ctx.beginPath(); ctx.arc(x + size / 2, y + size / 2, size * 0.42, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + size * 0.28, y + size * 0.50); ctx.lineTo(x + size * 0.44, y + size * 0.66); ctx.lineTo(x + size * 0.74, y + size * 0.34); ctx.stroke();
+  } else if (kind === 'receipt') {
+    ctx.beginPath(); ctx.roundRect(x + size * 0.18, y + size * 0.05, size * 0.64, size * 0.88, size * 0.08); ctx.stroke();
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x + size * 0.32, y + size * (0.30 + i * 0.17)); ctx.lineTo(x + size * 0.68, y + size * (0.30 + i * 0.17)); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function drawPill(label, x, y, color = copperLight, alpha = 1) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  ctx.font = '750 13px system-ui';
+  const width = ctx.measureText(label).width + 28;
+  ctx.fillStyle = 'rgba(23,21,18,0.88)'; roundedRect(x, y, width, 32, 16);
+  ctx.strokeStyle = `${color}88`; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x, y, width, 32, 16); ctx.stroke();
+  text([label], x + 14, y + 21, 13, color, 750);
+  ctx.restore();
+  return width;
+}
+
+function drawBrandHeader(label, alpha = 1) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  drawMark(54, 34, 36);
+  text(['ArcadeOps'], 104, 60, 18, ink, 760);
+  ctx.font = '700 13px system-ui';
+  text([label], 1226 - ctx.measureText(label).width, 59, 13, muted, 700);
+  ctx.strokeStyle = 'rgba(246,240,231,0.10)'; ctx.beginPath(); ctx.moveTo(54, 88); ctx.lineTo(1226, 88); ctx.stroke();
+  ctx.restore();
+}
+
+function drawStepRail(active, alpha = 1) {
+  const labels = ['MCP', 'VERIFY', 'SANDBOX', 'APPROVE', 'RECEIPT'];
+  const icons = ['eye', 'eye', 'terminal', 'check', 'receipt'];
+  const start = 250, gap = 195, y = 657;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  ctx.strokeStyle = 'rgba(246,240,231,0.12)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(start, y); ctx.lineTo(start + gap * 4, y); ctx.stroke();
+  labels.forEach((label, index) => {
+    const x = start + index * gap;
+    ctx.fillStyle = index <= active ? copper : '#34302b';
+    ctx.beginPath(); ctx.arc(x, y, 19, 0, Math.PI * 2); ctx.fill();
+    if (index === active) { ctx.strokeStyle = 'rgba(242,184,125,0.38)'; ctx.lineWidth = 8; ctx.stroke(); }
+    drawIcon(icons[index], x - 9, y - 9, 18, index <= active ? '#17130f' : muted);
+    ctx.textAlign = 'center'; text([label], x, y + 39, 11, index <= active ? ink : muted, 780);
+  });
+  ctx.textAlign = 'left'; ctx.restore();
+}
+
+function drawScreenshot(image, progress, alpha = 1) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const eased = easeOut(progress);
+  const cardX = 54, cardY = 160 + (1 - eased) * 10, cardW = 1172, cardH = 492;
+  ctx.shadowColor = 'rgba(0,0,0,0.44)'; ctx.shadowBlur = 34; ctx.shadowOffsetY = 18;
+  ctx.fillStyle = '#14120f'; roundedRect(cardX, cardY, cardW, cardH, 18);
+  ctx.shadowColor = 'transparent';
+  ctx.save(); ctx.beginPath(); ctx.roundRect(cardX + 7, cardY + 7, cardW - 14, cardH - 14, 12); ctx.clip();
+  const fullScale = Math.min((cardW - 28) / image.naturalWidth, (cardH - 28) / image.naturalHeight);
+  const detailProgress = smooth((progress - 0.58) / 0.42);
+  const scale = fullScale * (1 + detailProgress * 0.12);
+  const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
+  const panX = detailProgress * Math.min(18, Math.max(0, width - cardW + 28) / 2);
+  ctx.drawImage(image, cardX + cardW / 2 - width / 2 - panX, cardY + cardH / 2 - height / 2, width, height);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(242,184,125,0.42)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 18); ctx.stroke();
+  ctx.restore();
+}
+
+function drawEvidenceScene(index, progress, alpha, titleLines, pill, activeStep) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  drawBrandHeader(`0${index - 1} / 05`, 1);
+  text(titleLines.slice(0, 1), 66, 132, 30, ink, 680, 1.08, 'Georgia');
+  drawPill(pill, 928, 108, index === 6 ? green : copperLight);
+  drawScreenshot(images[index - 2], progress, 1);
+  text(['FULL PAGE · LIVE HARNESS EVIDENCE'], 66, 686, 11, muted, 760);
+  ctx.restore();
+}
+
+function drawScene(index, progress, alpha) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (index === 0) {
+    const enter = easeOut(progress * 2.4);
+    drawMark(72, 178 + (1 - enter) * 22, 124, enter);
+    text(['ARCADEOPS'], 238, 232, 22, copperLight, 820);
+    text(['The agent can act.', 'You keep authority.'], 238, 302, 61, ink, 560, 1.02, 'Georgia');
+    text(['One bounded mission. One human decision. One verifiable result.'], 242, 458, 23, '#c2b9ae', 500);
+    let chipX = 242;
+    ['TRUEFORGE', 'MCP', 'VERIFIER', 'DAYTONA', 'HUMAN GATE'].forEach(label => { chipX += drawPill(label, chipX, 510, copperLight, enter) + 10; });
+    ctx.strokeStyle = 'rgba(216,138,76,0.45)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(1080, 340, 110 + Math.sin(progress * Math.PI) * 12, 0, Math.PI * 2); ctx.stroke();
+    drawIcon('shield', 1027, 285, 106, copperLight);
+  } else if (index === 1) {
+    drawBrandHeader('AUTHORITY CONTRACT');
+    text(['One mission. One write.', 'Nothing broader.'], 72, 168, 48, ink, 560, 1.06, 'Georgia');
+    const cards = [
+      ['shield', 'MISSION', 'TF-SAFE-ROLLBACK-001'], ['eye', 'SCOPE', 'checkout-api · v42 → v41'],
+      ['check', 'HUMAN GATE', 'execute_rollback'], ['terminal', 'SANDBOX', 'validation required'],
+      ['receipt', 'MAXIMUM', 'one authorised write'], ['shield', 'POSTCONDITION', 'healthy · errors ≤ 2.0%']
+    ];
+    cards.forEach((card, cardIndex) => {
+      const col = cardIndex % 3, row = Math.floor(cardIndex / 3);
+      const x = 72 + col * 392, y = 320 + row * 126 + (1 - easeOut(progress)) * 18;
+      ctx.fillStyle = 'rgba(23,21,18,0.82)'; roundedRect(x, y, 356, 100, 16);
+      ctx.strokeStyle = 'rgba(246,240,231,0.10)'; ctx.beginPath(); ctx.roundRect(x, y, 356, 100, 16); ctx.stroke();
+      drawIcon(card[0], x + 22, y + 27, 44, cardIndex === 5 ? green : copperLight);
+      text([card[1]], x + 84, y + 34, 11, muted, 800);
+      text([card[2]], x + 84, y + 66, 18, ink, 650);
+    });
+  } else if (index === 2) {
+    drawEvidenceScene(index, progress, 1, ['A read-only Verifier', 'checks the plan independently.'], '2 MCP CALLS · 0 WRITES', 1);
+  } else if (index === 3) {
+    drawEvidenceScene(index, progress, 1, ['Generated validation', 'runs inside Daytona.'], 'SANDBOX_VALIDATION_PASS', 2);
+  } else if (index === 4) {
+    drawEvidenceScene(index, progress, 1, ['TrueForge pauses', 'before the write.'], 'HUMAN APPROVAL REQUIRED', 3);
+  } else if (index === 5) {
+    drawEvidenceScene(index, progress, 1, ['Recovery is re-inspected.', 'Scope still wins.'], 'v41 · HEALTHY · 0.7%', 3);
+  } else if (index === 6) {
+    drawEvidenceScene(index, progress, 1, ['Persisted evidence,', 'exported fail-closed.'], '22 / 22 CHECKS PASSED', 4);
+  } else {
+    const enter = easeOut(progress * 2.2);
+    drawMark(568, 108 + (1 - enter) * 18, 144, enter);
+    ctx.textAlign = 'center';
+    text(['Capability for the agent.'], 640, 316, 45, ink, 560, 1.1, 'Georgia');
+    text(['Authority for the human. Proof for everyone.'], 640, 386, 27, '#c2b9ae', 520);
+    drawStepRail(4, enter);
+    ctx.textAlign = 'center';
+    text(['LET AGENTS ACT · KEEP AUTHORITY HUMAN'], 640, 548, 18, copperLight, 820);
+    ctx.textAlign = 'left';
+  }
+  ctx.restore();
+}
+
+function draw() {
+  const duration = Number.isFinite(audio.duration) ? audio.duration : 117;
+  const liveTime = audio.currentTime || 0;
+  const ratio = previewRatio ?? clamp(liveTime / duration);
+  const t = previewRatio === null ? liveTime : previewRatio * duration;
+  drawBackground(t);
+  let sceneIndex = sceneStops.findIndex((stop, index) => index < sceneStops.length - 1 && ratio >= stop && ratio < sceneStops[index + 1]);
+  if (sceneIndex < 0) sceneIndex = sceneStops.length - 2;
+  const start = sceneStops[sceneIndex] * duration;
+  const end = sceneStops[sceneIndex + 1] * duration;
+  const progress = clamp((t - start) / (end - start));
+  const fadeWindow = 2.8;
+  if (sceneIndex < sceneStops.length - 2 && end - t < fadeWindow) {
+    const fade = smooth(1 - (end - t) / fadeWindow);
+    drawScene(sceneIndex, progress, 1 - fade);
+    drawScene(sceneIndex + 1, 0, fade);
+  } else {
+    drawScene(sceneIndex, progress, 1);
+  }
+  ctx.fillStyle = '#2b2119'; ctx.fillRect(0, 712, 1280, 8);
+  ctx.fillStyle = copper; ctx.fillRect(0, 712, 1280 * ratio, 8);
   requestAnimationFrame(draw);
 }
 
@@ -86,7 +275,7 @@ Promise.all([
   new Promise((resolve, reject) => {
     if (audio.readyState >= 1) { resolve(); return; }
     audio.addEventListener('loadedmetadata', resolve, { once: true });
-    audio.addEventListener('error', () => reject(new Error('narration-final.wav is missing')), { once: true });
+    audio.addEventListener('error', () => reject(new Error(`${narrationSource} is missing`)), { once: true });
   }),
   ...images.map((image, index) => new Promise((resolve, reject) => {
     if (image.complete && image.naturalWidth > 0) { resolve(); return; }
@@ -94,18 +283,19 @@ Promise.all([
     image.onerror = () => reject(new Error(`${imageSources[index]} is missing`));
   }))
 ]).then(() => {
-  if (audio.duration < 165 || audio.duration > 190) throw new Error(`Narration duration ${audio.duration.toFixed(1)}s is outside 165-190s`);
+  if (audio.duration < 105 || audio.duration > 130) throw new Error(`Narration duration ${audio.duration.toFixed(1)}s is outside 105-130s`);
   button.disabled = false;
-  status.textContent = `Ready - verified assets loaded - ${Math.round(audio.duration)} seconds`;
+  status.textContent = `Ready - verified assets loaded - ${Math.round(audio.duration / playbackRate)} seconds at ${playbackRate.toFixed(2)}x`;
 }).catch(error => status.textContent = `FINAL VIDEO BLOCKED: ${error.message}`);
 
 button.addEventListener('click', async () => {
   button.disabled = true; audio.currentTime = 0;
+  audio.preservesPitch = true; audio.playbackRate = playbackRate;
   const canvasStream = canvas.captureStream(30);
   const audioStream = audio.captureStream();
   const stream = new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
-  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') ? 'video/webm;codecs=vp8,opus' : 'video/webm';
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
   const chunks = [];
   recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
   const recordingStartedAt = performance.now();

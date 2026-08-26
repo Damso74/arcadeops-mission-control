@@ -1,58 +1,59 @@
-# Three-minute video script
+# Final demo video script
 
-Target: 2:50 to 3:05. Record the real integrated session only after the strict exporter passes.
+Target: 1:52 to 2:05. Keep every screen readable and every transition intentional.
 
-## 0:00-0:15 - The problem
+## 0:00-0:12 - Hook
 
-**Visual:** Title card, then the TrueForge agent library.
+**Visual:** ArcadeOps title card.
 
-**Narration:** “AI agents can operate powerful tools, but access is not authority. ArcadeOps Mission Control delegates the work while keeping the final decision and the permitted scope under explicit control.”
+**Narration:** “An AI agent can roll back a broken service. The hard question is not whether it can act. It is who gets to say yes, what is allowed, and whether the result can be proved. This is ArcadeOps.”
 
-## 0:15-0:35 - TrueForge and the contract
+## 0:12-0:25 - One bounded mission
 
-**Visual:** `authority_contract.json`, then the saved `arcadeops-mission-control-v2` agent.
+**Visual:** Executable Authority Contract.
 
-**Narration:** “TrueForge runs the model, tools, subagents, sandbox, approval checkpoint, and persistent session. This executable Authority Contract independently permits one fictional rollback: checkout API from version forty-two to stable version forty-one.”
+**Narration:** “Inside TrueForge, checkout API is degraded on version forty-two. The mission is narrow: investigate, verify, and, only if every gate passes, roll back to version forty-one. An executable Authority Contract permits exactly one write. Nothing broader.”
 
-## 0:35-1:05 - MCP inspection and Verifier
+## 0:25-0:42 - Independent verification
 
-**Visual:** Parent `inspect_incident` showing `18.4%`; expand the single `Verifier` child thread and its two MCP calls.
+**Visual:** Full TrueForge Verifier page and its MCP calls.
 
-**Narration:** “The parent observes the degraded service through a real MCP server, then delegates exactly one read-only Verifier. The child independently inspects the incident and prepares the rollback token. It cannot call the write tool.”
+**Narration:** “The agent starts with a real M C P inspection: eighteen point four percent errors. Then TrueForge creates one read-only Verifier. It independently checks the incident and prepares the same rollback. It can challenge the plan, but it cannot touch the write tool.”
 
-## 1:05-1:35 - Generated code in Daytona
+## 0:42-1:01 - Daytona validation
 
-**Visual:** TrueForge sandbox card, generated Python validator, `sandbox.created` trace, and `SANDBOX_VALIDATION_PASS` output.
+**Visual:** Full sandbox validation page and `SANDBOX_VALIDATION_PASS`.
 
-**Narration:** “Next, the agent generates a fail-closed Python validator and executes it in TrueForge's Daytona sandbox. Through TrueForge's MCP bridge, that code inspects the incident and prepares the rollback itself, then checks the mission, service, versions, error rate, threshold, and token. A write is forbidden unless the persisted result contains this exact pass marker.”
+**Narration:** “Next, the agent generates a fail-closed Python validator and runs it inside a Daytona sandbox. The code calls the M C P tools again and checks the incident, service, versions, threshold, and token. Without the exact Sandbox Validation Pass result, the workflow stops.”
 
-## 1:35-2:05 - Native approval and write
+## 1:01-1:20 - Human authority
 
-**Visual:** Native `execute_rollback` approval card. Human clicks Allow. Show the resumed call and final `inspect_incident`: `v41`, healthy, `0.7%`.
+**Visual:** Native TrueForge approval checkpoint.
 
-**Narration:** “Only then does the agent attempt the rollback. TrueForge recognizes the MCP write annotation and pauses before execution. The human chooses Allow in the native interface. TrueForge resumes the same turn, performs exactly one rollback, and re-inspects the service to prove recovery.”
+**Narration:** “Only then does the agent request the rollback. TrueForge recognizes the irreversible tool call and pauses. The human sees the exact action and chooses Allow or Deny. No approval is inferred. No click is automated. Authority stays human.”
 
-## 2:05-2:20 - Fail-closed authority
+## 1:20-1:35 - Recovery and containment
 
-**Visual:** Test/evidence summary showing replay denial, concurrent single-write enforcement, and `AUTHORITY_DENIED` for `identity-api`.
+**Visual:** Full recovered-state page: `v41`, healthy, `0.7%`.
 
-**Narration:** “The controls fail closed. A stale token cannot be replayed, concurrent attempts produce only one write, and even human approval cannot expand the contract to another incident or service.”
+**Narration:** “After approval, exactly one rollback executes. A fresh inspection proves version forty-one is healthy and the error rate has fallen to zero point seven percent. Replay fails. Concurrent attempts still allow one write. Out-of-scope actions return Authority Denied.”
 
-## 2:20-2:50 - Evidence receipt
+## 1:35-1:49 - Evidence Receipt
 
-**Visual:** Evidence Console. Show the recovered result, the six-step path, `22 checks passed`, then open the technical evidence panel.
+**Visual:** Full Evidence Console and its `22/22` result.
 
-**Narration:** “The console reads a receipt generated from TrueForge's persisted public APIs. Twenty-two checks bind the model, Verifier, Daytona sandbox, human approval, single rollback, and recovered service. If one proof is missing, both the exporter and this success state fail closed.”
+**Narration:** “Finally, the Evidence Console turns the persisted session into a receipt anyone can inspect. Twenty-two checks bind the M C P calls, Verifier, Daytona run, validation result, human decision, single write, and recovered service. Remove one proof and success disappears. Evidence, not trust.”
 
-## 2:50-3:00 - Close
+## 1:49-1:57 - Close
 
-**Visual:** Project title and architecture line.
+**Visual:** ArcadeOps end card and the complete five-step rail.
 
-**Narration:** “TrueForge provides the harness. ArcadeOps adds enforceable authority and verifiable evidence. Delegate the work, never unlimited authority.”
+**Narration:** “TrueForge supplies the harness. ArcadeOps makes authority enforceable. The agent does the work. The human keeps the decision. The receipt proves the outcome.”
 
 ## Recording checks
 
-- No credential, account email, provider settings, or `.env` content is visible.
-- The sandbox card and exact validation marker are readable at normal video resolution.
-- The native approval click is performed by the participant, not automated.
-- The final frame includes repository and demo links only after they are public.
+- No credential, account email, provider setting, or `.env` content is visible.
+- Each live page is shown in full before its gentle detail zoom.
+- The native approval is visibly human-controlled.
+- Audio plays at natural speed with no artificial time compression.
+- The final file passes duration, resolution, audio, complete-playback, and frozen-content checks.
