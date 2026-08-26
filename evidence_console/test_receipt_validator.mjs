@@ -17,6 +17,14 @@ test('accepts the complete persisted receipt', () => {
   const evidence = validateReceipt(copy());
   assert.equal(Object.keys(evidence.checks).length, REQUIRED_CHECKS.length);
   assert.equal(evidence.write.response.recovered, true);
+  assert.equal(evidence.verifierRespondedAt, '2026-08-25T09:38:04.695Z');
+});
+
+test('derives the Verifier time from its correlated calls', () => {
+  const receipt = copy();
+  receipt.precondition_inspections = receipt.precondition_inspections.filter(item => item.thread_id === 'main');
+  const evidence = validateReceipt(receipt);
+  assert.equal(evidence.verifierRespondedAt, '2026-08-25T09:38:04.695Z');
 });
 
 test('rejects missing, partial, false, or extra checks', () => {
