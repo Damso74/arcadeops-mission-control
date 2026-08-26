@@ -169,7 +169,7 @@ npm --prefix demo_assets exec playwright install chromium
 powershell -NoProfile -ExecutionPolicy Bypass -File demo_assets/render_narration.ps1
 npm --prefix demo_assets run preview
 npm --prefix demo_assets run render
-npm --prefix demo_assets run verify -- arcadeops-trueforge-demo-cinematic.webm
+npm --prefix demo_assets run verify
 ```
 
 `render_narration.ps1` and the renderer share the default `demo_assets/narration-final.wav` path. To use an alternative local narration such as the ignored ElevenLabs track, set `$env:DEMO_NARRATION='narration-elevenlabs-damien.mp3'` before previewing or rendering. The real-time renderer opens Chromium visibly by default because headless Chromium may throttle canvas frames. `DEMO_BASE_URL` and `DEMO_OUTPUT` override the local server and output path without machine-specific source changes.

@@ -10,7 +10,7 @@ if (path.basename(narration) !== narration) {
 }
 const pageUrl = `${baseUrl}/demo_assets/video-final.html?${new URLSearchParams({ audio: narration })}`;
 const outputPath = path.resolve(
-  process.env.DEMO_OUTPUT || path.join(assetDirectory, "arcadeops-trueforge-demo-cinematic.webm"),
+  process.env.DEMO_OUTPUT || path.join(assetDirectory, "arcadeops-trueforge-demo-final.webm"),
 );
 const headless = process.env.DEMO_HEADLESS === "1";
 
