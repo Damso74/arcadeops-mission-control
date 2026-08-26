@@ -39,7 +39,11 @@ class EvidenceConsoleTests(unittest.TestCase):
             "console-root",
             "page-title",
             "evidence-state",
-            "execution",
+            "mission-replay",
+            "replay-control",
+            "step-control",
+            "gate-card",
+            "outcome-strip",
             "check-groups",
             "session-link",
         }
@@ -49,12 +53,16 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertIn("https://github.com/Damso74/arcadeops-mission-control#evidence-status", script)
         self.assertIn("Open TrueForge session", script)
         self.assertIn("Inspect public evidence", script)
-        self.assertIn("Rollback completed", script)
-        self.assertIn("after human approval", script)
-        self.assertIn("Receipt valid", script)
+        self.assertIn("Agents can prepare. Humans authorize.", script)
+        self.assertIn("paused at human approval", script)
+        self.assertIn("Receipt verified", script)
+        self.assertIn("Waiting for human approval", script)
+        self.assertIn("Exactly one write unlocked", script)
+        self.assertIn("Deterministic replay from persisted evidence", html)
+        self.assertIn('aria-live="polite"', html)
         self.assertNotIn("innerHTML", script)
         self.assertIn('data-evidence-status="loading"', html)
-        self.assertNotIn("Rollback completed", html)
+        self.assertNotIn("Agents can prepare. Humans authorize.", html)
         self.assertNotIn("SUBMISSION_ACCEPTANCE_PASS", html)
 
     def test_receipt_validator_rejects_incomplete_or_uncorrelated_evidence(self) -> None:

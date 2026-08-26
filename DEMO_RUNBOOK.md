@@ -17,7 +17,7 @@ Required before recording:
 - TrueForge, Postgres, Redis and MCP are healthy;
 - sandbox capability is `VALID`;
 - `arcadeops-mission-control-v2` exists;
-- eighteen Python workflow and console tests, seven adversarial Receipt-validator tests, and fifteen MCP black-box tests pass;
+- eighteen Python workflow and console tests, eight adversarial Receipt-validator tests, and fifteen MCP black-box tests pass;
 - for a new live run, `checkout-api` is degraded on `v42` and the stable target is `v41`; for the final video, the verified persisted session may be opened instead;
 - the final integrated session is either ready to run or already persisted.
 
@@ -31,7 +31,7 @@ Required before recording:
 6. Show TrueForge sandbox `exec` running the generated fail-closed Python validator and returning the exact marker `SANDBOX_VALIDATION_PASS`.
 7. Show `execute_rollback` paused on TrueForge's native approval card. The participant chooses **Allow** in the UI.
 8. Show the same turn resume, exactly one authorized rollback, and the final `inspect_incident` proving `v41`, `healthy`, and `0.7% <= 2.0%`.
-9. Open the Evidence Console at <http://127.0.0.1:4173/evidence_console/>. Show the recovered result, the six-step path, and `22 checks passed`, then open the technical evidence panel for the TrueForge, Verifier, Daytona and approval details.
+9. Open the Evidence Console at <http://127.0.0.1:4173/evidence_console/>. Click `Replay verified mission`, show the flow pause at the copper human authority boundary, then show the single write, recovered state and sealed `22/22` Receipt. Open the verification checks only after the story is clear.
 
 ## Evidence export
 
