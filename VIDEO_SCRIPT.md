@@ -6,7 +6,7 @@ Target: 1:52 to 2:05. Keep every screen readable and every transition intentiona
 
 **Visual:** ArcadeOps title card.
 
-**Narration:** “An AI agent can roll back a broken service. The hard question is not whether it can act. It is who gets to say yes, what is allowed, and whether the result can be proved. This is ArcadeOps.”
+**Narration:** “Agents can prepare. Humans authorize. ArcadeOps is an approval firewall for autonomous operations: the sandbox proves the change, the human decides, and the receipt proves the outcome.”
 
 ## 0:12-0:25 - One bounded mission
 
@@ -40,15 +40,15 @@ Target: 1:52 to 2:05. Keep every screen readable and every transition intentiona
 
 ## 1:35-1:49 - Evidence Receipt
 
-**Visual:** Full Evidence Console and its `22/22` result.
+**Visual:** Evidence Console hero, then click `Replay verified mission`. Show the flow pause at the copper human boundary, cross it once, recover the service, and seal `22/22`.
 
-**Narration:** “Finally, the Evidence Console turns the persisted session into a receipt anyone can inspect. Twenty-two checks bind the M C P calls, Verifier, Daytona run, validation result, human decision, single write, and recovered service. Remove one proof and success disappears. Evidence, not trust.”
+**Narration:** “Finally, the Mission Replay reconstructs the persisted authority chain. Twenty-two checks bind the M C P calls, Verifier, Daytona run, human decision, single write, and recovered service. Remove one proof and every success state disappears.”
 
 ## 1:49-1:57 - Close
 
 **Visual:** ArcadeOps end card and the complete five-step rail.
 
-**Narration:** “TrueForge supplies the harness. ArcadeOps makes authority enforceable. The agent does the work. The human keeps the decision. The receipt proves the outcome.”
+**Narration:** “The agent proposes. The sandbox proves. You decide. TrueForge supplies the harness, and ArcadeOps makes its authority visible, enforceable, and verifiable.”
 
 ## Recording checks
 

@@ -3,182 +3,259 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f4f3ef">
-    <meta name="description" content="A human-readable review of one approval-gated operation executed by TrueForge.">
-    <title>ArcadeOps Mission Review</title>
+    <meta name="theme-color" content="#0b0c0b">
+    <meta name="description" content="Replay one approval-gated agent operation and inspect its verifiable Evidence Receipt.">
+    <title>ArcadeOps | Verified Mission Replay</title>
     <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" type="module"></script>
   </head>
   <body>
+    <a class="skip-link" href="#mission-replay">Skip to mission replay</a>
+
     <main class="app-shell" id="console-root" data-evidence-status="loading" aria-labelledby="page-title">
       <header class="app-bar">
-        <a class="brand" href="#top" aria-label="ArcadeOps Mission Review home">
+        <a class="brand" href="#top" aria-label="ArcadeOps home">
           <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
             <path d="M6.5 25 16 5l9.5 20h-5.2l-1.5-3.8h-5.6l1.8-4.3h2.1L16 14l-4.6 11H6.5Z"/>
           </svg>
-          <span>ArcadeOps</span>
+          <span class="brand-copy"><strong>ArcadeOps</strong><small>Mission control</small></span>
         </a>
-        <span class="environment">Demo environment</span>
+
+        <div class="app-context" aria-label="Environment">
+          <span class="context-dot" aria-hidden="true"></span>
+          Verified demo
+        </div>
+
         <nav class="project-links" aria-label="Project links">
-          <a href="https://youtu.be/4SeSywZ2WL0" target="_blank" rel="noreferrer">Demo</a>
-          <a href="https://github.com/Damso74/arcadeops-mission-control" target="_blank" rel="noreferrer">Source</a>
+          <a href="https://youtu.be/4SeSywZ2WL0" target="_blank" rel="noreferrer">Watch demo</a>
+          <a href="https://github.com/Damso74/arcadeops-mission-control" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
-        <div class="receipt-state" id="evidence-state" role="status" aria-live="polite">
+
+        <div class="receipt-state" id="evidence-state" role="status" aria-live="polite" data-status="loading">
           <span class="state-dot" aria-hidden="true"></span>
-          <span>Checking receipt</span>
+          <span>Verifying receipt</span>
         </div>
       </header>
 
-      <section class="record-card" id="top">
-        <div class="record-layout">
-          <div class="record-copy">
-            <div class="record-eyebrow" id="record-eyebrow">Verifying persisted evidence</div>
-            <div class="record-badges success-only">
-              <span class="status-badge">Completed</span>
-              <span>Fictional data</span>
-            </div>
-            <h1 id="page-title">Checking receipt</h1>
-            <p class="record-summary" id="record-summary">No operational result is shown until the complete receipt passes validation.</p>
-            <div class="record-actions success-only">
-              <a class="primary-action" href="#execution">Inspect execution</a>
-              <a class="text-action" href="../evidence/submission-evidence-receipt.json" target="_blank" rel="noreferrer">View raw receipt</a>
-            </div>
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> Approval firewall for AI agents</div>
+          <h1 id="page-title">Checking the authority chain</h1>
+          <p class="hero-summary" id="record-summary">No operational result is shown until the persisted receipt proves the complete chain.</p>
 
-            <dl class="impact-grid success-only" aria-label="Recovery impact">
-              <div>
-                <dt>Error rate</dt>
-                <dd><s id="before-rate">18.4%</s><span aria-hidden="true">→</span><strong id="after-rate">0.7%</strong></dd>
-              </div>
-              <div>
-                <dt>Version</dt>
-                <dd><s id="from-version">v42</s><span aria-hidden="true">→</span><strong id="to-version">v41</strong></dd>
-              </div>
-              <div>
-                <dt>Service status</dt>
-                <dd><strong class="healthy">Healthy</strong></dd>
-              </div>
-            </dl>
+          <div class="hero-actions success-only">
+            <button class="primary-action" id="replay-control" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.8v10.4L15 10 6 4.8Z"/></svg>
+              <span>Replay verified mission</span>
+            </button>
+            <a class="secondary-link" href="#proof">Inspect the proof <span aria-hidden="true">↓</span></a>
           </div>
 
-          <aside class="receipt-card success-only" aria-label="Receipt summary">
-            <div class="receipt-card-head">
-              <span>Receipt</span>
-              <span class="valid-badge"><span aria-hidden="true">✓</span> Valid</span>
-            </div>
-            <strong class="receipt-score"><span id="receipt-check-count">22</span>/<span id="receipt-check-total">22</span></strong>
-            <span class="receipt-score-label">verification checks passed</span>
-            <dl class="receipt-stats">
-              <div><dt>Authorized writes</dt><dd><span id="write-count">1</span> / 1</dd></div>
-              <div><dt>Scope violations</dt><dd>0</dd></div>
-              <div><dt>Generated</dt><dd id="receipt-date">2026-08-25</dd></div>
-            </dl>
-            <a href="#receipt">Inspect receipt <span aria-hidden="true">↓</span></a>
-          </aside>
+          <p class="replay-disclosure success-only">
+            <span aria-hidden="true">●</span>
+            Deterministic replay from persisted evidence. No live system is connected.
+          </p>
+        </div>
+
+        <div class="hero-principle success-only" aria-label="ArcadeOps operating principle">
+          <span>01</span>
+          <p>The agent proposes.<br><strong>The sandbox proves.</strong><br>You decide.</p>
         </div>
       </section>
 
-      <div class="content-grid success-only">
-        <section class="panel execution-panel" id="execution" aria-labelledby="execution-title">
-          <header class="panel-heading">
-            <div>
-              <span class="section-label">Execution</span>
-              <h2 id="execution-title">What actually happened</h2>
+      <section class="mission-stage success-only" id="mission-replay" aria-labelledby="mission-title">
+        <header class="stage-header">
+          <div>
+            <div class="stage-kicker"><span id="incident-name">INC</span> / <span id="service-name">service</span></div>
+            <h2 id="mission-title">Verified mission replay</h2>
+          </div>
+          <div class="stage-status" id="replay-status" role="status" aria-live="polite">
+            <span class="status-pulse" aria-hidden="true"></span>
+            <span id="replay-status-text">Ready to replay</span>
+          </div>
+        </header>
+
+        <div class="mission-canvas" data-replay-state="ready">
+          <div class="incident-card" id="incident-card">
+            <div class="incident-card-top">
+              <span class="incident-label"><span aria-hidden="true">!</span> Incident</span>
+              <span class="mono" id="incident-time">09:37:46 UTC</span>
             </div>
-            <span class="panel-meta">6 verified events</span>
-          </header>
-
-          <ol class="timeline" aria-label="Verified execution timeline">
-            <li>
-              <span class="timeline-marker" aria-hidden="true">✓</span>
-              <div class="timeline-copy"><strong>Incident detected</strong><p id="detected-detail">Service degraded after deployment.</p></div>
-              <div class="timeline-meta"><time id="detected-time">09:37:46</time><span>MCP</span></div>
-            </li>
-            <li>
-              <span class="timeline-marker" aria-hidden="true">✓</span>
-              <div class="timeline-copy"><strong>Independent verification passed</strong><p>Verifier confirmed the incident, service and rollback target.</p></div>
-              <div class="timeline-meta"><time id="verifier-time">09:38:04</time><span>TrueForge</span></div>
-            </li>
-            <li>
-              <span class="timeline-marker" aria-hidden="true">✓</span>
-              <div class="timeline-copy"><strong>Sandbox validation passed</strong><p>Generated checks returned the required validation marker.</p></div>
-              <div class="timeline-meta"><time id="sandbox-time">09:38:40</time><span>Daytona</span></div>
-            </li>
-            <li class="approval-event">
-              <span class="timeline-marker" aria-hidden="true">●</span>
-              <div class="timeline-copy"><strong>Human approval granted</strong><p>The write remained paused until the operator selected Allow.</p></div>
-              <div class="timeline-meta"><time id="approval-time">09:53:35</time><span>Human</span></div>
-            </li>
-            <li>
-              <span class="timeline-marker" aria-hidden="true">✓</span>
-              <div class="timeline-copy"><strong>Rollback executed · 1/1</strong><p id="write-detail">One authorized version change was applied.</p></div>
-              <div class="timeline-meta"><time id="write-time">09:53:35</time><span>MCP</span></div>
-            </li>
-            <li>
-              <span class="timeline-marker" aria-hidden="true">✓</span>
-              <div class="timeline-copy"><strong>Recovery confirmed</strong><p id="recovery-detail">The error rate returned below the healthy threshold.</p></div>
-              <div class="timeline-meta"><time id="recovery-time">09:53:38</time><span>TrueForge</span></div>
-            </li>
-          </ol>
-        </section>
-
-        <aside class="side-column" aria-label="Decision and guardrails">
-          <section class="panel decision-panel">
-            <span class="section-label">Decision</span>
-            <div class="decision-icon" aria-hidden="true">✓</div>
-            <h2>Human approval granted</h2>
-            <p id="decision-copy">Allow recorded before the only write.</p>
-            <dl class="compact-facts">
-              <div><dt>Decision</dt><dd>Allow</dd></div>
-              <div><dt>Write limit</dt><dd>1</dd></div>
-              <div><dt>Writes used</dt><dd>1</dd></div>
-            </dl>
-          </section>
-
-          <section class="panel scope-panel">
-            <header class="panel-heading compact"><h2>Authority scope</h2><span>Locked</span></header>
-            <dl class="scope-list">
-              <div><dt>Mission</dt><dd id="mission-id">TF-SAFE-ROLLBACK-001</dd></div>
-              <div><dt>Incident</dt><dd id="incident-name">INC-2026-042</dd></div>
-              <div><dt>Service</dt><dd id="service-name">checkout-api</dd></div>
-              <div><dt>Change</dt><dd id="authority-change">v42 → v41</dd></div>
-            </dl>
-            <div class="scope-guardrails">
-              <h3>Guardrails</h3>
-              <ul>
-                <li><span aria-hidden="true">✓</span> Read-only before approval</li>
-                <li><span aria-hidden="true">✓</span> Isolated validation</li>
-                <li><span aria-hidden="true">✓</span> One scoped write</li>
-              </ul>
+            <strong id="incident-service">checkout-api degraded</strong>
+            <div class="incident-metric">
+              <span>Error rate</span>
+              <b id="incident-rate">18.4%</b>
             </div>
-          </section>
-        </aside>
-      </div>
+          </div>
 
-      <details class="panel receipt-details success-only" id="receipt">
-        <summary>
-          <span><strong>Receipt and checks</strong><small>Runtime metadata and grouped verification results</small></span>
-          <span class="summary-status">Valid · <b id="proof-summary">22/22</b></span>
-        </summary>
-        <div class="receipt-body">
-          <dl class="technical-facts">
-            <div><dt>Runtime</dt><dd>TrueForge 0.1.4</dd></div>
-            <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
-            <div><dt>Verifier</dt><dd id="verifier-name">Independent verification</dd></div>
-            <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona · isolated</dd></div>
-            <div><dt>Authority</dt><dd id="authority-name">Receipt bound</dd></div>
-            <div><dt>Decision</dt><dd id="decision-time">Human Allow · correlated</dd></div>
-          </dl>
-          <div class="check-groups" id="check-groups" aria-label="Grouped receipt verification checks"></div>
-          <div class="receipt-actions">
-            <a id="session-link" class="secondary-action" href="http://127.0.0.1:8791/" target="_blank" rel="noreferrer">Open TrueForge session</a>
-            <a class="text-action" href="../evidence/submission-evidence-receipt.json" target="_blank" rel="noreferrer">View raw receipt</a>
+          <div class="authority-path" id="authority-path" aria-label="Verified operation sequence">
+            <div class="path-line" aria-hidden="true"><span id="path-progress"></span></div>
+
+            <article class="path-node" data-node="0">
+              <div class="node-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7.5 8.5 4 12l3.5 3.5M16.5 8.5 20 12l-3.5 3.5M14 5l-4 14"/></svg>
+              </div>
+              <span>Prepare</span>
+              <strong>Agent</strong>
+              <small>Read only</small>
+            </article>
+
+            <article class="path-node" data-node="1">
+              <div class="node-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m-8-4.5 8 4.5"/></svg>
+              </div>
+              <span>Validate</span>
+              <strong>Daytona</strong>
+              <small>Isolated</small>
+            </article>
+
+            <article class="path-node human-node" data-node="2">
+              <div class="authority-boundary" aria-hidden="true"><span>Authority boundary</span></div>
+              <div class="node-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 7c.7-3.4 3.2-5 7-5s6.3 1.6 7 5M18.5 9.5l1.3 1.3L22 8.6"/></svg>
+              </div>
+              <span>Authorize</span>
+              <strong>Human</strong>
+              <small id="human-node-state">Required</small>
+            </article>
+
+            <article class="path-node" data-node="3">
+              <div class="node-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM9 12h6m-3-3 3 3-3 3"/></svg>
+              </div>
+              <span>Execute</span>
+              <strong>One write</strong>
+              <small>1 / 1</small>
+            </article>
+
+            <article class="path-node" data-node="4">
+              <div class="node-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7V3Zm8 0v5h4M10 13l1.5 1.5L16 10"/></svg>
+              </div>
+              <span>Prove</span>
+              <strong>Receipt</strong>
+              <small id="node-check-count">22 / 22</small>
+            </article>
+          </div>
+
+          <div class="gate-card" id="gate-card">
+            <div class="gate-lock" id="gate-lock" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12v11H6V10Zm6 4v3"/></svg>
+            </div>
+            <div class="gate-copy">
+              <span id="gate-label">Human approval gate</span>
+              <strong id="gate-title">Write permission locked</strong>
+              <small id="gate-detail">No agent can cross this boundary alone.</small>
+            </div>
+            <div class="gate-scope">
+              <span>Authorized action</span>
+              <strong id="authority-change">v42 → v41</strong>
+              <small>Maximum one write</small>
+            </div>
+          </div>
+
+          <div class="outcome-strip" id="outcome-strip">
+            <div class="outcome-label">
+              <span class="outcome-check" aria-hidden="true">✓</span>
+              <div><span>Recovery verified</span><strong id="outcome-service">checkout-api healthy</strong></div>
+            </div>
+            <dl class="outcome-metrics">
+              <div><dt>Version</dt><dd><s id="from-version">v42</s><span aria-hidden="true">→</span><strong id="to-version">v41</strong></dd></div>
+              <div><dt>Error rate</dt><dd><s id="before-rate">18.4%</s><span aria-hidden="true">→</span><strong id="after-rate">0.7%</strong></dd></div>
+              <div><dt>Writes</dt><dd><strong>1 / 1</strong></dd></div>
+            </dl>
           </div>
         </div>
-      </details>
 
-      <footer class="success-only">
-        <span>Demo data only. No production systems connected.</span>
-        <span>Evidence reconstructed from the persisted TrueForge session.</span>
+        <footer class="stage-controls">
+          <div class="step-copy">
+            <span class="step-index" id="step-index">00</span>
+            <div><strong id="step-title">Evidence verified</strong><small id="step-detail">Replay the persisted mission to inspect each control.</small></div>
+          </div>
+          <div class="control-actions">
+            <button class="icon-button" id="restart-control" type="button" aria-label="Restart mission replay" title="Restart replay">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 7V3.5M4.5 3.5H8M4.5 3.5A7 7 0 1 1 3 11"/></svg>
+            </button>
+            <button class="step-button" id="step-control" type="button">Next step <span aria-hidden="true">→</span></button>
+          </div>
+        </footer>
+      </section>
+
+      <section class="proof-section success-only" id="proof" aria-labelledby="proof-title">
+        <header class="section-heading">
+          <div><span class="section-number">02</span><h2 id="proof-title">One action. Three layers of proof.</h2></div>
+          <p>Every success claim below is derived from the validated public Receipt.</p>
+        </header>
+
+        <div class="proof-grid">
+          <article class="proof-card verifier-card">
+            <div class="proof-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5c0 4.7 2.6 8 7.5 10 4.9-2 7.5-5.3 7.5-10V6L12 3Zm-3 9 2 2 4-5"/></svg></div>
+            <span class="proof-kicker">Independent check</span>
+            <h3>Verifier established the facts</h3>
+            <p>A separate agent inspected the incident and prepared the rollback using read-only MCP calls.</p>
+            <div class="proof-meta"><span>2 MCP calls</span><span>0 writes</span><time id="verifier-time">09:38:04</time></div>
+          </article>
+
+          <article class="proof-card sandbox-card">
+            <div class="proof-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 9 8-4.5M12 12 4 7.5M12 12v9"/></svg></div>
+            <span class="proof-kicker">Isolated validation</span>
+            <h3>Daytona proved the change first</h3>
+            <p>Generated validation ran inside a sandbox through a strictly read-only MCP bridge.</p>
+            <div class="proof-meta"><span>Sandbox ready</span><span>Validation pass</span><time id="sandbox-time">09:38:40</time></div>
+          </article>
+
+          <article class="proof-card approval-card">
+            <div class="proof-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 7c.7-3.4 3.2-5 7-5s6.3 1.6 7 5M18.5 9.5l1.3 1.3L22 8.6"/></svg></div>
+            <span class="proof-kicker">Native authority</span>
+            <h3>A human unlocked exactly one write</h3>
+            <p>TrueForge paused the MCP write until an operator explicitly selected Allow.</p>
+            <div class="proof-meta"><span>Decision: Allow</span><span>Limit: 1</span><time id="approval-time">09:53:35</time></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="receipt-section success-only" aria-labelledby="receipt-title">
+        <div class="receipt-seal">
+          <span class="seal-ring" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M9 16.5 14 21l9-11"/></svg></span>
+          <div><span>Evidence Receipt</span><strong><b id="receipt-check-count">22</b>/<b id="receipt-check-total">22</b> verified</strong></div>
+        </div>
+
+        <div class="receipt-intro">
+          <span class="section-number">03</span>
+          <h2 id="receipt-title">Trust the chain, not the claim.</h2>
+          <p>The receipt correlates the mission, sandbox, approval, write and recovered state. If any link is missing, this console fails closed.</p>
+        </div>
+
+        <dl class="receipt-facts">
+          <div><dt>Mission</dt><dd id="mission-id">TF-SAFE-ROLLBACK-001</dd></div>
+          <div><dt>Runtime</dt><dd>TrueForge 0.1.4</dd></div>
+          <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona / isolated</dd></div>
+          <div><dt>Decision</dt><dd id="decision-time">Human Allow / correlated</dd></div>
+          <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
+          <div><dt>Generated</dt><dd id="receipt-date">2026-08-25</dd></div>
+        </dl>
+
+        <details class="receipt-details" id="receipt">
+          <summary>
+            <span><strong>Inspect all verification checks</strong><small>Authority, execution, recovery and integrity</small></span>
+            <span class="summary-status"><b id="proof-summary">22/22</b> passed <span aria-hidden="true">＋</span></span>
+          </summary>
+          <div class="receipt-body">
+            <div class="check-groups" id="check-groups" aria-label="Grouped receipt verification checks"></div>
+            <div class="receipt-actions">
+              <a id="session-link" class="secondary-action" href="http://127.0.0.1:8791/" target="_blank" rel="noreferrer">Open TrueForge session</a>
+              <a class="text-action" href="../evidence/submission-evidence-receipt.json" target="_blank" rel="noreferrer">View raw receipt <span aria-hidden="true">↗</span></a>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <footer class="site-footer success-only">
+        <div class="footer-brand">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M6.5 25 16 5l9.5 20h-5.2l-1.5-3.8h-5.6l1.8-4.3h2.1L16 14l-4.6 11H6.5Z"/></svg>
+          <span><strong>ArcadeOps</strong><small>Approval infrastructure for autonomous operations.</small></span>
+        </div>
+        <p>Fictional demo data. No production systems connected.<br>Built for The Agent Harness Hackathon.</p>
       </footer>
     </main>
   </body>

@@ -5,8 +5,8 @@
 <h1 align="center">ArcadeOps Mission Control</h1>
 
 <p align="center">
-  <strong>Approval-gated AI operations on TrueForge</strong><br>
-  Delegate the work. Keep the authority. Prove the outcome.
+  <strong>The approval firewall for autonomous agents</strong><br>
+  The agent proposes. The sandbox proves. You decide.
 </p>
 
 <p align="center">
@@ -23,15 +23,14 @@
   <a href="#qodo-review-trail"><strong>Inspect the Qodo trail</strong></a>
 </p>
 
-ArcadeOps is a fictional incident-response agent built on
+ArcadeOps is an approval firewall for a fictional incident-response agent built on
 [TrueForge](https://github.com/truefoundry/trueforge) for the 2026 Agent Harness
-Hackathon. It recovers one degraded service, but it cannot decide its own
+Hackathon. The agent can prepare a recovery, but it cannot grant itself write
 authority. Independent verification, isolated validation, a native human
-approval and an executable policy all have to agree before one rollback can
-run.
+approval and an executable policy all have to agree before exactly one rollback
+can run.
 
-> The agent performs the operation. The human owns the decision. The receipt
-> proves what happened.
+> Agents can prepare. Humans authorize. The receipt proves what happened.
 
 ## See it work
 
@@ -102,7 +101,7 @@ flowchart LR
 
 The final persisted session is `01m0w4epkt6803zxs2awnhgz8s`. The public
 [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/)
-reads the versioned
+turns that session into a deterministic Mission Replay. It reads the versioned
 [Evidence Receipt](evidence/submission-evidence-receipt.json) and fails closed:
 remove any required proof and the success state disappears.
 
@@ -213,13 +212,18 @@ behavior, authorization denial, expiry, replay, concurrency and the MCP
 black-box contract. The same checks run in
 [Submission CI](https://github.com/Damso74/arcadeops-mission-control/actions/workflows/ci.yml).
 
+`demo_project/` is the preserved unsafe baseline from the original spike.
+Its standalone policy test is expected to fail on
+`requires_human_approval=false`; that refusal is the experiment's evidence, not
+part of the passing submission suite.
+
 ## Project map
 
 | Path | Purpose |
 | --- | --- |
 | [`mcp_server/`](mcp_server/) | Governed rollback tools, executable contract and black-box tests |
 | [`runner/`](runner/) | TrueForge configuration, acceptance runner and strict exporter |
-| [`evidence_console/`](evidence_console/) | Receipt-backed public proof surface |
+| [`evidence_console/`](evidence_console/) | Receipt-backed Mission Replay and public proof surface |
 | [`evidence/`](evidence/) | Versioned precursor and final Evidence Receipts |
 | [`demo_assets/`](demo_assets/) | Reproducible demo renderer and media verification |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Detailed runtime and trust-boundary design |
@@ -237,8 +241,10 @@ by Qodo, remediated and then merged by a human.
 | [#1](https://github.com/Damso74/arcadeops-mission-control/pull/1) | Initial governed agent and MCP hardening | 6 findings resolved, follow-up: 0 bugs |
 | [#2](https://github.com/Damso74/arcadeops-mission-control/pull/2) | Safe Rollback, Receipt and Evidence Console | 11 findings resolved across three passes |
 | [#3](https://github.com/Damso74/arcadeops-mission-control/pull/3) | Public evidence and reproducible demo tooling | 6 findings resolved, final review: 0 bugs |
+| [#4](https://github.com/Damso74/arcadeops-mission-control/pull/4) | Judge-ready README and submission alignment | CI and GitGuardian passed |
+| [#5](https://github.com/Damso74/arcadeops-mission-control/pull/5) | Human-first Evidence Console | Qodo-reviewed, CI and GitGuardian passed |
 
-All three PRs passed CI and GitGuardian before human merge.
+All five PRs passed CI and GitGuardian before human merge.
 
 ## Safety, scope and disclosure
 
