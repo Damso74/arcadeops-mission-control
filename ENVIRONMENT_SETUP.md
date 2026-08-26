@@ -13,7 +13,7 @@ git clone https://github.com/truefoundry/trueforge.git .runtime/trueforge
 git -C .runtime/trueforge checkout d421135dcfc802e08655d12c119e18ed715db2ef
 ```
 
-Until PR #1 is merged, add `--branch codex/hackathon-submission --single-branch` to the first clone command. The TrueForge pin is the 0.1.4 runtime used by the verified evidence. `.runtime/` is intentionally ignored and must be created on every fresh clone.
+The default `main` branch contains the complete submission. The TrueForge pin is the 0.1.4 runtime used by the verified evidence. `.runtime/` is intentionally ignored and must be created on every fresh clone.
 
 ## Local secrets
 

@@ -227,7 +227,7 @@ black-box contract. The same checks run in
 | [`AUTHORITY_CONTRACT.md`](AUTHORITY_CONTRACT.md) | Human-readable authorization model |
 | [`SUBMISSION.md`](SUBMISSION.md) | Judge-ready project description, limitations and disclosure |
 
-## Qodo review trail
+## Qodo Code Review Evidence
 
 Every substantive change was developed through a public pull request, reviewed
 by Qodo, remediated and then merged by a human.
