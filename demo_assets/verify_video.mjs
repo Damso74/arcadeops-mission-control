@@ -31,6 +31,15 @@ try {
       audioTracks: video.captureStream().getAudioTracks().length,
     };
   });
+  if (before.duration < 165 || before.duration > 180) {
+    throw new Error(`Duration check failed: expected 165-180 seconds, received ${before.duration}`);
+  }
+  if (before.width !== 1280 || before.height !== 720) {
+    throw new Error(`Resolution check failed: expected 1280x720, received ${before.width}x${before.height}`);
+  }
+  if (before.audioTracks < 1) {
+    throw new Error("Audio check failed: no audio track is present");
+  }
 
   const sampleTimes = [0.04, 0.20, 0.42, 0.62, 0.82, 0.96].map(
     (ratio) => ratio * before.duration,
@@ -54,7 +63,20 @@ try {
       canvas.width = 32;
       canvas.height = 18;
       const context = canvas.getContext("2d", { willReadFrequently: true });
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Hash only presentation content. The renderer's animated progress bar
+      // occupies the bottom eight pixels and must not satisfy progression.
+      const contentHeight = Math.max(1, video.videoHeight - 16);
+      context.drawImage(
+        video,
+        0,
+        0,
+        video.videoWidth,
+        contentHeight,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
       let hash = 2166136261;
       for (let index = 0; index < pixels.length; index += 4) {
@@ -76,6 +98,12 @@ try {
     );
   }
 
+  await page.waitForFunction(
+    () => document.querySelector("video").ended,
+    undefined,
+    { timeout: 30_000 },
+  );
+
   const after = await page.evaluate(() => {
     const video = document.querySelector("video");
     return {
@@ -88,6 +116,15 @@ try {
       decodedVideoBytes: video.webkitVideoDecodedByteCount ?? null,
     };
   });
+  if (!after.ended || after.currentTime < before.duration - 0.25) {
+    throw new Error(`Playback completion check failed at ${after.currentTime}/${before.duration}`);
+  }
+  if (!(after.decodedAudioBytes > 0)) {
+    throw new Error("Audio decode check failed: no decoded audio bytes");
+  }
+  if (!(after.decodedVideoBytes > 0)) {
+    throw new Error("Video decode check failed: no decoded video bytes");
+  }
   console.log(JSON.stringify({ before, frameSignatures, uniqueFrameCount, after }, null, 2));
 } finally {
   await browser.close();

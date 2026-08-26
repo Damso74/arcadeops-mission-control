@@ -11,7 +11,7 @@
 </style>
 <main>
   <canvas id="stage" width="1280" height="720"></canvas>
-  <audio id="narration" src="narration-elevenlabs-damien.mp3" preload="auto"></audio>
+  <audio id="narration" preload="auto"></audio>
   <button id="record" disabled>Record final WebM</button>
   <div id="status">Loading verified local assets...</div>
 </main>
@@ -20,6 +20,11 @@
 const canvas = document.querySelector('#stage');
 const ctx = canvas.getContext('2d');
 const audio = document.querySelector('#narration');
+const requestedNarration = new URLSearchParams(window.location.search).get('audio');
+const narrationSource = requestedNarration && /^[a-zA-Z0-9._-]+\.(?:mp3|wav|ogg|m4a)$/.test(requestedNarration)
+  ? requestedNarration
+  : 'narration-final.wav';
+audio.src = narrationSource;
 const playbackRate = 1.14;
 audio.preservesPitch = true;
 audio.playbackRate = playbackRate;
@@ -270,7 +275,7 @@ Promise.all([
   new Promise((resolve, reject) => {
     if (audio.readyState >= 1) { resolve(); return; }
     audio.addEventListener('loadedmetadata', resolve, { once: true });
-    audio.addEventListener('error', () => reject(new Error('narration-elevenlabs-damien.mp3 is missing')), { once: true });
+    audio.addEventListener('error', () => reject(new Error(`${narrationSource} is missing`)), { once: true });
   }),
   ...images.map((image, index) => new Promise((resolve, reject) => {
     if (image.complete && image.naturalWidth > 0) { resolve(); return; }

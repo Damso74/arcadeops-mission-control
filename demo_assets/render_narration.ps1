@@ -1,7 +1,11 @@
 [CmdletBinding()]
 param(
     [string]$InputPath,
-    [string]$OutputPath
+    [string]$OutputPath,
+    [ValidateRange(-10, 10)]
+    [int]$Rate = 1,
+    [ValidateRange(0, 5000)]
+    [int]$BreakMilliseconds = 1200
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,13 +28,13 @@ if ($paragraphs.Count -lt 8) {
 $synth = [System.Speech.Synthesis.SpeechSynthesizer]::new()
 try {
     $synth.SelectVoice('Microsoft Zira Desktop')
-    $synth.Rate = -1
+    $synth.Rate = $Rate
     $synth.Volume = 100
     $prompt = [System.Speech.Synthesis.PromptBuilder]::new([System.Globalization.CultureInfo]::GetCultureInfo('en-US'))
     for ($index = 0; $index -lt $paragraphs.Count; $index++) {
         $prompt.AppendText($paragraphs[$index])
         if ($index -lt $paragraphs.Count - 1) {
-            $prompt.AppendBreak([TimeSpan]::FromMilliseconds(2200))
+            $prompt.AppendBreak([TimeSpan]::FromMilliseconds($BreakMilliseconds))
         }
     }
     $synth.SetOutputToWaveFile($OutputPath)

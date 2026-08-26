@@ -161,17 +161,18 @@ The receipt requires persisted proof of all of the following: the final agent, e
 
 The renderer source and narration script are versioned. The generated narration audio and rendered video stay ignored because they are publication artifacts; use [VIDEO_SCRIPT.md](VIDEO_SCRIPT.md) to supply a local narration track before rendering.
 
-To reproduce the demo media, save the local narration as `demo_assets/narration-elevenlabs-damien.mp3`, start the repository server shown above, then run:
+To reproduce the demo media with the built-in Windows narrator, start the repository server shown above, then run:
 
 ```powershell
 npm --prefix demo_assets ci
 npm --prefix demo_assets exec playwright install chromium
+powershell -NoProfile -ExecutionPolicy Bypass -File demo_assets/render_narration.ps1
 npm --prefix demo_assets run preview
 npm --prefix demo_assets run render
 npm --prefix demo_assets run verify -- arcadeops-trueforge-demo-cinematic.webm
 ```
 
-The real-time renderer opens Chromium visibly by default because headless Chromium may throttle canvas frames. `DEMO_BASE_URL` and `DEMO_OUTPUT` override the local server and output path without machine-specific source changes.
+`render_narration.ps1` and the renderer share the default `demo_assets/narration-final.wav` path. To use an alternative local narration such as the ignored ElevenLabs track, set `$env:DEMO_NARRATION='narration-elevenlabs-damien.mp3'` before previewing or rendering. The real-time renderer opens Chromium visibly by default because headless Chromium may throttle canvas frames. `DEMO_BASE_URL` and `DEMO_OUTPUT` override the local server and output path without machine-specific source changes.
 
 ## Qodo Code Review Evidence
 

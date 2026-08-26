@@ -4,7 +4,11 @@ import { chromium } from "playwright";
 
 const assetDirectory = path.dirname(fileURLToPath(import.meta.url));
 const baseUrl = (process.env.DEMO_BASE_URL || "http://127.0.0.1:4173").replace(/\/$/, "");
-const pageUrl = `${baseUrl}/demo_assets/video-final.html`;
+const narration = process.env.DEMO_NARRATION || "narration-final.wav";
+if (path.basename(narration) !== narration) {
+  throw new Error("DEMO_NARRATION must name a file inside demo_assets");
+}
+const pageUrl = `${baseUrl}/demo_assets/video-final.html?${new URLSearchParams({ audio: narration })}`;
 const outputPath = path.resolve(
   process.env.DEMO_OUTPUT || path.join(assetDirectory, "arcadeops-trueforge-demo-cinematic.webm"),
 );
