@@ -75,7 +75,7 @@ const requireInspection = ({ inspection, receipt, expectedVersion, incidentStatu
 
 export function validateReceipt(receipt) {
   requireThat(isRecord(receipt), 'root value must be an object');
-  requireThat(receipt.schema_version === '2.0.0', 'unsupported schema_version');
+  requireThat(receipt.schema_version === '2.1.0', 'unsupported schema_version');
   requireThat(receipt.receipt_kind === 'trueforge-safe-rollback-acceptance', 'unexpected receipt_kind');
   requireThat(receipt.final_status === 'SUBMISSION_ACCEPTANCE_PASS', 'final status is not passing');
 
@@ -122,20 +122,22 @@ export function validateReceipt(receipt) {
   );
   const verifierResponseTimes = receipt.verifier_tool_calls.map(call => requireTimestamp(call.responded_at, 'Verifier response'));
 
-  requireThat(Array.isArray(receipt.sandbox_references) && receipt.sandbox_references.length > 0, 'sandbox evidence is missing');
+  requireThat(Array.isArray(receipt.sandbox_references) && receipt.sandbox_references.length === 1, 'exactly one sandbox reference is required');
   requireThat(
     receipt.sandbox_references.every(reference => reference?.provider === 'daytona' && isSha256(reference?.id_sha256)),
     'Daytona sandbox reference is malformed',
   );
+  const sandboxIdHash = receipt.sandbox_references[0].id_sha256;
   requireThat(Array.isArray(receipt.sandbox_exec_calls) && receipt.sandbox_exec_calls.length > 0, 'sandbox executions are missing');
   requireThat(
     receipt.sandbox_exec_calls.every(call => (
       call.tool === 'exec'
       && call.server === 'sandbox'
+      && call.sandbox_id_sha256 === sandboxIdHash
       && isSha256(call.sandbox_command_evidence?.command_sha256)
       && call.sandbox_command_evidence?.no_write_attempt === true
     )),
-    'a sandbox execution is malformed or write-capable',
+    'a sandbox execution is malformed, uncorrelated, or write-capable',
   );
   const sandboxValidators = receipt.sandbox_exec_calls.filter(call => (
     call.validation_pass_observed === true
@@ -172,9 +174,30 @@ export function validateReceipt(receipt) {
   const callId = write.tool_call_id;
   requireThat(isNonEmptyString(callId), 'write tool_call_id is missing');
   requireThat(
+    isNonEmptyString(approval.approval_event_id)
+    && approval.approval_event_id !== callId
+    && approval.approval_event_id !== verifier.event_id,
+    'native approval event identity is missing or not unique',
+  );
+  requireThat(
     [correlatedWrite.tool_call_id, writeCall.tool_call_id, approval.tool_call_id, decision.tool_call_id]
       .every(candidate => candidate === callId),
     'approval, decision, write attempt, and executed write are not correlated',
+  );
+  requireThat(
+    approval.event_type === 'tool.approval_required'
+    && approval.thread_id === 'main'
+    && approval.tool === 'execute_rollback'
+    && approval.server === 'governed-operations'
+    && approval.tool_type === 'mcp'
+    && approval.transport_tool === 'execute_rollback'
+    && approval.mission_id === receipt.mission_id,
+    'native approval request provenance does not match the governed write',
+  );
+  requireThat(
+    decision.event_type === 'turn.created'
+    && decision.input_type === 'user.tool_approval',
+    'human decision provenance is not a persisted TrueForge approval input',
   );
   requireThat(decision.decision === 'allow' && decision.actor === 'human_via_trueforge_ui', 'human Allow evidence is missing');
   requireThat(

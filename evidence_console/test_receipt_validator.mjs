@@ -52,6 +52,13 @@ test('rejects missing authority-chain records', () => {
 });
 
 test('rejects uncorrelated approval and write identifiers', () => {
+  rejects(receipt => { delete receipt.approval_requests[0].approval_event_id; }, /approval event identity/);
+  rejects(receipt => { receipt.approval_requests[0].approval_event_id = receipt.executed_writes[0].tool_call_id; }, /approval event identity/);
+  rejects(receipt => { receipt.approval_requests[0].event_type = 'model.message'; }, /approval request provenance/);
+  rejects(receipt => { receipt.approval_requests[0].tool = 'prepare_rollback'; }, /approval request provenance/);
+  rejects(receipt => { receipt.approval_requests[0].mission_id = 'different-mission'; }, /approval request provenance/);
+  rejects(receipt => { receipt.human_decisions[0].event_type = 'model.message'; }, /decision provenance/);
+  rejects(receipt => { receipt.human_decisions[0].input_type = 'user.message'; }, /decision provenance/);
   rejects(receipt => { receipt.human_decisions[0].tool_call_id = 'different-call'; }, /not correlated/);
   rejects(receipt => { receipt.approval_correlated_writes[0].mission_id = 'different-mission'; }, /mission_id/);
   rejects(receipt => { receipt.executed_writes[0].server = 'untrusted-server'; }, /governed MCP transport/);
@@ -72,6 +79,8 @@ test('rejects fabricated Verifier and Daytona proof', () => {
   rejects(receipt => { receipt.verifier_tool_calls[1].tool = 'execute_rollback'; }, /Verifier did not/);
   rejects(receipt => { receipt.verifier_tool_calls[1].tool_call_id = receipt.verifier_tool_calls[0].tool_call_id; }, /distinct persisted identities/);
   rejects(receipt => { receipt.sandbox_references[0] = {}; }, /Daytona sandbox reference/);
+  rejects(receipt => { receipt.sandbox_exec_calls[0].sandbox_id_sha256 = '0'.repeat(64); }, /uncorrelated/);
+  rejects(receipt => { delete receipt.sandbox_exec_calls.at(-1).sandbox_id_sha256; }, /uncorrelated/);
   rejects(receipt => { receipt.sandbox_exec_calls[0].sandbox_command_evidence.no_write_attempt = false; }, /write-capable/);
   rejects(receipt => { receipt.sandbox_exec_calls.at(-1).validation_pass_observed = false; }, /passing read-only/);
 });

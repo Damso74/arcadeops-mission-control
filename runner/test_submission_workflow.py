@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import unittest
 from unittest.mock import patch
 
 from configure_governed_pivot import mcp_manifest
 from configure_submission_agent import AGENT_NAME, submission_manifest
 from export_submission_receipt import (
+    correlate_sandbox_exec_calls,
     correlated_executed_writes,
     effective_call,
     is_daytona_provider_ready,
@@ -232,6 +234,14 @@ class SubmissionWorkflowTests(unittest.TestCase):
         self.assertEqual(summary["name"], "Verifier")
         self.assertNotIn("input", summary)
         self.assertNotIn("unexpected_private_field", summary)
+
+        correlated = correlate_sandbox_exec_calls(
+            [{"tool_call_id": "call-1"}],
+            ["v1:daytona:tenant.sandbox"],
+        )
+        self.assertEqual(len(correlated[0]["sandbox_id_sha256"]), 64)
+        self.assertNotIn("v1:daytona:tenant.sandbox", json.dumps(correlated))
+        self.assertIsNone(correlate_sandbox_exec_calls([{}], ["first", "second"])[0]["sandbox_id_sha256"])
 
 
 if __name__ == "__main__":
