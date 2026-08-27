@@ -20,7 +20,7 @@
   ·
   <a href="https://damso74.github.io/arcadeops-mission-control/evidence_console/"><strong>Open the Evidence Console</strong></a>
   ·
-  <a href="#qodo-review-trail"><strong>Inspect the Qodo trail</strong></a>
+  <a href="#qodo-code-review-evidence"><strong>Inspect the Qodo trail</strong></a>
 </p>
 
 ArcadeOps is an approval firewall for a fictional incident-response agent built on
@@ -99,11 +99,37 @@ flowchart LR
 | Recovery | Fresh inspection reports `healthy` at `0.7%` errors | PASS |
 | Evidence integrity | All 22 required checks are true | **22/22** |
 
-The final persisted session is `01m0w4epkt6803zxs2awnhgz8s`. The public
+The public
 [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/)
-turns that session into a deterministic Mission Replay. It reads the versioned
+turns the final persisted session into a deterministic Mission Replay. It reads the versioned
 [Evidence Receipt](evidence/submission-evidence-receipt.json) and fails closed:
 remove any required proof and the success state disappears.
+
+## Evidence status
+
+| Item | Value |
+| --- | --- |
+| Persisted TrueForge session | `01m0w4epkt6803zxs2awnhgz8s` |
+| Public proof surface | [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/) |
+| Versioned proof | [Evidence Receipt](evidence/submission-evidence-receipt.json) |
+| Required checks | 22 / 22 verified |
+| Final status | `SUBMISSION_ACCEPTANCE_PASS` |
+
+The TrueForge session itself is local by design. The runtime runs on the
+participant's machine at <http://127.0.0.1:8791>, so its session view is not
+publicly reachable. Everything needed to audit the mission is reconstructed from
+that session into the versioned Receipt and replayed by the public console.
+
+The Daytona sandbox identifier is published only as a SHA-256 digest
+(`sandbox_references[].id_sha256`) so the tenant-scoped id stays confidential. It
+remains correlated to this run by the persisted execution proof: a ready
+`daytona` provider, the recorded sandbox `exec` calls, the generated read-only
+MCP-bridge validator and its exact `SANDBOX_VALIDATION_PASS` marker.
+
+Human authority also took real time. TrueForge requested approval at
+`2026-08-25T09:38:46Z` and the human Allow was recorded at
+`2026-08-25T09:53:35Z`, roughly 14 minutes and 48 seconds later. The single
+write ran only after that decision.
 
 ## Trust boundaries
 
@@ -230,6 +256,7 @@ part of the passing submission suite.
 | [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md) | Safe recording and live-demo procedure |
 | [`AUTHORITY_CONTRACT.md`](AUTHORITY_CONTRACT.md) | Human-readable authorization model |
 | [`SUBMISSION.md`](SUBMISSION.md) | Judge-ready project description, limitations and disclosure |
+| [`docs/history/`](docs/history/) | Historical spike and planning records, superseded by the final state |
 
 ## Qodo Code Review Evidence
 
@@ -243,8 +270,9 @@ by Qodo, remediated and then merged by a human.
 | [#3](https://github.com/Damso74/arcadeops-mission-control/pull/3) | Public evidence and reproducible demo tooling | 6 findings resolved, final review: 0 bugs |
 | [#4](https://github.com/Damso74/arcadeops-mission-control/pull/4) | Judge-ready README and submission alignment | CI and GitGuardian passed |
 | [#5](https://github.com/Damso74/arcadeops-mission-control/pull/5) | Human-first Evidence Console | Qodo-reviewed, CI and GitGuardian passed |
+| [#6](https://github.com/Damso74/arcadeops-mission-control/pull/6) | Verified Mission Replay and receipt-derived claims | 2 findings resolved, final review: 0 bugs, 0 violations |
 
-All five PRs passed CI and GitGuardian before human merge.
+All six PRs passed CI and GitGuardian before human merge.
 
 ## Safety, scope and disclosure
 

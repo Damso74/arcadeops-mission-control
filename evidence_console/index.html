@@ -79,12 +79,12 @@
           <div class="incident-card" id="incident-card">
             <div class="incident-card-top">
               <span class="incident-label"><span aria-hidden="true">!</span> Incident</span>
-              <span class="mono" id="incident-time">09:37:46 UTC</span>
+              <span class="mono" id="incident-time">—</span>
             </div>
-            <strong id="incident-service">checkout-api degraded</strong>
+            <strong id="incident-service">Service degraded</strong>
             <div class="incident-metric">
               <span>Error rate</span>
-              <b id="incident-rate">18.4%</b>
+              <b id="incident-rate">—</b>
             </div>
           </div>
 
@@ -134,7 +134,7 @@
               </div>
               <span>Prove</span>
               <strong>Receipt</strong>
-              <small id="node-check-count">22 / 22</small>
+              <small id="node-check-count">— / —</small>
             </article>
           </div>
 
@@ -149,7 +149,7 @@
             </div>
             <div class="gate-scope">
               <span>Authorized action</span>
-              <strong id="authority-change">v42 → v41</strong>
+              <strong id="authority-change">— → —</strong>
               <small>Maximum one write</small>
             </div>
           </div>
@@ -157,11 +157,11 @@
           <div class="outcome-strip" id="outcome-strip">
             <div class="outcome-label">
               <span class="outcome-check" aria-hidden="true">✓</span>
-              <div><span>Recovery verified</span><strong id="outcome-service">checkout-api healthy</strong></div>
+              <div><span>Recovery verified</span><strong id="outcome-service">Service healthy</strong></div>
             </div>
             <dl class="outcome-metrics">
-              <div><dt>Version</dt><dd><s id="from-version">v42</s><span aria-hidden="true">→</span><strong id="to-version">v41</strong></dd></div>
-              <div><dt>Error rate</dt><dd><s id="before-rate">18.4%</s><span aria-hidden="true">→</span><strong id="after-rate">0.7%</strong></dd></div>
+              <div><dt>Version</dt><dd><s id="from-version">—</s><span aria-hidden="true">→</span><strong id="to-version">—</strong></dd></div>
+              <div><dt>Error rate</dt><dd><s id="before-rate">—</s><span aria-hidden="true">→</span><strong id="after-rate">—</strong></dd></div>
               <div><dt>Writes</dt><dd><strong>1 / 1</strong></dd></div>
             </dl>
           </div>
@@ -193,7 +193,7 @@
             <span class="proof-kicker">Independent check</span>
             <h3>Verifier established the facts</h3>
             <p>A separate agent inspected the incident and prepared the rollback using read-only MCP calls.</p>
-            <div class="proof-meta"><span>2 MCP calls</span><span>0 writes</span><time id="verifier-time">09:38:04</time></div>
+            <div class="proof-meta"><span>2 MCP calls</span><span>0 writes</span><time id="verifier-time">—</time></div>
           </article>
 
           <article class="proof-card sandbox-card">
@@ -201,7 +201,7 @@
             <span class="proof-kicker">Isolated validation</span>
             <h3>Daytona proved the change first</h3>
             <p>Generated validation ran inside a sandbox through a strictly read-only MCP bridge.</p>
-            <div class="proof-meta"><span>Sandbox ready</span><span>Validation pass</span><time id="sandbox-time">09:38:40</time></div>
+            <div class="proof-meta"><span>Sandbox ready</span><span>Validation pass</span><time id="sandbox-time">—</time></div>
           </article>
 
           <article class="proof-card approval-card">
@@ -209,7 +209,7 @@
             <span class="proof-kicker">Native authority</span>
             <h3>A human unlocked exactly one write</h3>
             <p>TrueForge paused the MCP write until an operator explicitly selected Allow.</p>
-            <div class="proof-meta"><span>Decision: Allow</span><span>Limit: 1</span><time id="approval-time">09:53:35</time></div>
+            <div class="proof-meta"><span>Decision: Allow</span><span>Limit: 1</span><time id="approval-time">—</time></div>
           </article>
         </div>
       </section>
@@ -217,7 +217,7 @@
       <section class="receipt-section success-only" aria-labelledby="receipt-title">
         <div class="receipt-seal">
           <span class="seal-ring" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M9 16.5 14 21l9-11"/></svg></span>
-          <div><span>Evidence Receipt</span><strong><b id="receipt-check-count">22</b>/<b id="receipt-check-total">22</b> verified</strong></div>
+          <div><span>Evidence Receipt</span><strong><b id="receipt-check-count">—</b>/<b id="receipt-check-total">—</b> verified</strong></div>
         </div>
 
         <div class="receipt-intro">
@@ -227,18 +227,18 @@
         </div>
 
         <dl class="receipt-facts">
-          <div><dt>Mission</dt><dd id="mission-id">TF-SAFE-ROLLBACK-001</dd></div>
+          <div><dt>Mission</dt><dd id="mission-id">—</dd></div>
           <div><dt>Runtime</dt><dd>TrueForge 0.1.4</dd></div>
           <div><dt>Sandbox</dt><dd id="sandbox-name">Daytona / isolated</dd></div>
           <div><dt>Decision</dt><dd id="decision-time">Human Allow / correlated</dd></div>
           <div><dt>Model</dt><dd id="model-name">Verified at runtime</dd></div>
-          <div><dt>Generated</dt><dd id="receipt-date">2026-08-25</dd></div>
+          <div><dt>Generated</dt><dd id="receipt-date">—</dd></div>
         </dl>
 
         <details class="receipt-details" id="receipt">
           <summary>
             <span><strong>Inspect all verification checks</strong><small>Authority, execution, recovery and integrity</small></span>
-            <span class="summary-status"><b id="proof-summary">22/22</b> passed <span aria-hidden="true">＋</span></span>
+            <span class="summary-status"><b id="proof-summary">—/—</b> passed <span aria-hidden="true">＋</span></span>
           </summary>
           <div class="receipt-body">
             <div class="check-groups" id="check-groups" aria-label="Grouped receipt verification checks"></div>

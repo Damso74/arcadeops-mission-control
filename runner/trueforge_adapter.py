@@ -9,7 +9,8 @@ consultee). Ecrire ici des noms de classes ou d'endpoints plausibles
 reviendrait a fabriquer une API ; le spike serait alors un test de fiction.
 
 Regle de cablage, une fonction a la fois :
-  1. lever l'inconnue correspondante dans UNKNOWNS.md (doc publique officielle) ;
+  1. lever l'inconnue correspondante dans docs/history/UNKNOWNS.md
+     (doc publique officielle) ;
   2. remplacer le corps par le vrai appel ;
   3. supprimer le `raise UnknownTrueForgeAPI` de cette fonction uniquement ;
   4. relancer le checkpoint concerne.
@@ -110,7 +111,7 @@ def poll_approval(run: Any, approval_id: str) -> dict[str, Any]:
 
     IMPORTANT : cette fonction est en lecture seule par conception. Le runner ne
     doit disposer d'aucun moyen d'emettre une decision, sinon CP4 ne prouve rien
-    (SPIKE_PLAN.md §5). Attendu au minimum : etat, horodatage, identite de
+    (docs/history/SPIKE_PLAN.md §5). Attendu au minimum : etat, horodatage, identite de
     l'approbateur - laquelle doit differer de celle de l'agent.
     """
     raise UnknownTrueForgeAPI(

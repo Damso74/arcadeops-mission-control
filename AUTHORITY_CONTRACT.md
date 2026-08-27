@@ -1,37 +1,45 @@
 # Authority Contract
 
-Le contrat exécutable se trouve dans [`mcp_server/authority_contract.json`](mcp_server/authority_contract.json).
+The executable contract lives in [`mcp_server/authority_contract.json`](mcp_server/authority_contract.json).
 
-## Autorité accordée
+## Granted authority
 
-- Mission : `TF-SAFE-ROLLBACK-001`.
-- Identité logique : `arcadeops-mission-control`.
-- Ressources lisibles : `incidents:demo` et `services:demo`.
-- Outils autorisés : `inspect_incident`, `prepare_rollback`, `execute_rollback`, `export_evidence`.
-- Écriture : un seul rollback de `checkout-api`, lié à `INC-2026-042`, de `v42` vers `v41`.
-- Maximum : exactement zéro ou une écriture selon la décision humaine, jamais davantage.
-- Approbation obligatoire : `execute_rollback`.
-- Expiration : 31 août 2026 à 20:00 UTC.
+- Mission: `TF-SAFE-ROLLBACK-001`.
+- Logical identity: `arcadeops-mission-control`.
+- Readable resources: `incidents:demo` and `services:demo`.
+- Allowed tools: `inspect_incident`, `prepare_rollback`, `execute_rollback`, `export_evidence`.
+- Write: a single rollback of `checkout-api`, bound to `INC-2026-042`, from `v42` to `v41`.
+- Maximum: exactly zero or one write depending on the human decision, never more.
+- Approval required for: `execute_rollback`.
+- Expiry: 31 December 2026 at 23:59:59 UTC.
 
-## Autorité refusée
+## Denied authority
 
-Les nouveaux déploiements, modifications d'identité, appels réseau externes et contacts avec la production sont interdits. `INC-2026-077`, `identity-api` et toute autre paire de versions ne figurent dans aucune permission d'écriture.
+New deployments, identity changes, external network calls and any contact with
+production are forbidden. `INC-2026-077`, `identity-api` and every other version
+pair appear in no write permission.
 
-## Application réelle
+## Real enforcement
 
-Chaque appel vérifie l'identifiant de mission, l'expiration, l'outil et la permission. La préparation hors autorité échoue avec `AUTHORITY_DENIED` avant de produire un jeton. L'exécution revalide la permission et un SHA-256 dérivé de la mission, de l'incident, du service et de l'état courant ; un jeton rejoué devient invalide après mutation. Après écriture, le parent doit relire l'incident et prouver `v41`, l'état `healthy` et un taux d'erreur inférieur ou égal au seuil.
+Every call verifies the mission id, the expiry, the tool and the permission.
+Preparation outside the granted authority fails with `AUTHORITY_DENIED` before
+any token is issued. Execution revalidates the permission and a SHA-256 derived
+from the mission, the incident, the service and the current state; a replayed
+token becomes invalid once the state has mutated. After the write, the parent
+must inspect the incident again and prove `v41`, the `healthy` status and an
+error rate at or below the threshold.
 
-Le test black-box prouve :
+The black-box test proves:
 
-- préparation sans écriture ;
-- rollback autorisé et atomique ;
-- anti-rejeu ;
-- refus de l'incident et du service hors périmètre avec état inchangé ;
-- persistance des refus dans l'audit ;
-- une seule réussite sous appels concurrents avec le même jeton ;
-- absence de perte d'audit sous appels concurrents.
+- preparation without any write;
+- an authorized and atomic rollback;
+- anti-replay;
+- refusal of the out-of-scope incident and service with unchanged state;
+- persistence of refusals in the audit log;
+- exactly one success under concurrent calls with the same token;
+- no audit loss under concurrent calls.
 
-Commande :
+Command:
 
 ```powershell
 npm --prefix mcp_server test

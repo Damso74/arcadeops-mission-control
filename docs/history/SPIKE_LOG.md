@@ -1,5 +1,9 @@
 # TrueForge — journal du spike
 
+> **Historical document.** Preserved exactly as written during the spike and
+> upgrade phases. It is superseded by the final submission state described in
+> README.md and SUBMISSION.md, and is kept only for traceability.
+
 - Heure de début : 2026-08-24 11:07:42 CEST (Europe/Berlin)
 - Heure de fin : 2026-08-24 11:30:59 CEST
 - Durée réelle : 00:23:17

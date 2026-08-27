@@ -4,7 +4,8 @@ Ce script n'a jamais ete execute. Tant que `runner/trueforge_adapter.py` n'est
 pas cable sur les vraies surfaces publiques, chaque checkpoint se termine en
 `BLOCKED_UNKNOWN_API` : c'est le comportement attendu, pas une panne.
 
-Usage (a lancer par Codex, apres avoir leve les inconnues de UNKNOWNS.md) :
+Usage (a lancer par Codex, apres avoir leve les inconnues de
+docs/history/UNKNOWNS.md) :
 
     python runner/spike_runner.py --only boot
     python runner/spike_runner.py --only sandbox
@@ -182,7 +183,7 @@ def cp_approval(ctx: dict[str, Any], report: Report) -> None:
             "APPROVAL_AND_RESUME",
             FAIL,
             f"approval-mode={ctx['approval_mode']} : mode de diagnostic, non valide "
-            "pour CP4 (SPIKE_PLAN.md §5). Relancer en trueforge-native.",
+            "pour CP4 (docs/history/SPIKE_PLAN.md §5). Relancer en trueforge-native.",
         )
         return
 
@@ -346,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
                            encoding="utf-8")
     report.print_table()
     print(f"  Rapport : {report_path}")
-    print("  Reporter ces statuts dans SPIKE_LOG.md, sans les arrondir.\n")
+    print("  Reporter ces statuts dans docs/history/SPIKE_LOG.md, sans les arrondir.\n")
     return report.exit_code()
 
 
