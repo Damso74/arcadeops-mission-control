@@ -28,14 +28,14 @@ All records and writes are fictional and local. No production account, personal 
 
 ## Current submission gate
 
-The complete Safe Rollback path is verified in persisted TrueForge session `01m0w4epkt6803zxs2awnhgz8s`: one Verifier with two direct MCP calls, a real Daytona sandbox, generated read-only MCP-bridge validation, the exact pass marker, native human approval correlated to exactly one rollback, and pre- and post-action inspections. The strict public Receipt passes all 22 checks and powers a fail-closed Mission Replay. The branch passes nineteen Python workflow and console tests, eight adversarial Receipt-validator tests, fifteen MCP black-box tests, and the npm audit locally. Five public PRs were human-merged after automated checks, with Qodo review on substantive code changes. The repository, Evidence Console and 118-second YouTube demo are public. The participant has confirmed hackathon registration; final submission-form receipt remains the last administrative proof to retain.
+The complete Safe Rollback path is verified in persisted TrueForge session `01m0w4epkt6803zxs2awnhgz8s`: one Verifier with two direct MCP calls, a real Daytona sandbox, generated read-only MCP-bridge validation, the exact pass marker, native human approval correlated to exactly one rollback, and pre- and post-action inspections. The strict public Receipt passes all 22 checks and powers a fail-closed Mission Replay. That TrueForge session is local by design, so the public audit surface is the versioned Receipt and the Evidence Console. The Daytona sandbox identifier is published only as a SHA-256 digest to keep the tenant-scoped id confidential, and it stays correlated to the run through the persisted provider readiness and sandbox execution evidence. The human decision was not instantaneous: approval was requested at `2026-08-25T09:38:46Z` and the Allow was recorded at `2026-08-25T09:53:35Z`, roughly 14 minutes and 48 seconds later. The branch passes twenty Python workflow and console tests, eight adversarial Receipt-validator tests, sixteen MCP black-box tests, and the npm audit locally. Six public PRs were human-merged after automated checks, with Qodo review on substantive code changes. The repository, Evidence Console and 118-second YouTube demo are public. The participant has confirmed hackathon registration; final submission-form receipt remains the last administrative proof to retain.
 
 ## Submission links
 
 - Repository: <https://github.com/Damso74/arcadeops-mission-control>
 - Evidence Console: <https://damso74.github.io/arcadeops-mission-control/evidence_console/>
 - Video: <https://www.youtube.com/watch?v=4SeSywZ2WL0>
-- Qodo-reviewed code PRs: [#1](https://github.com/Damso74/arcadeops-mission-control/pull/1), [#2](https://github.com/Damso74/arcadeops-mission-control/pull/2), [#3](https://github.com/Damso74/arcadeops-mission-control/pull/3), and [#5](https://github.com/Damso74/arcadeops-mission-control/pull/5)
+- Qodo-reviewed code PRs: [#1](https://github.com/Damso74/arcadeops-mission-control/pull/1), [#2](https://github.com/Damso74/arcadeops-mission-control/pull/2), [#3](https://github.com/Damso74/arcadeops-mission-control/pull/3), [#5](https://github.com/Damso74/arcadeops-mission-control/pull/5), and [#6](https://github.com/Damso74/arcadeops-mission-control/pull/6)
 
 ## AI assistance disclosure
 

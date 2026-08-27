@@ -1,5 +1,9 @@
 # Upgrade compétitif — budget maximal 90 minutes
 
+> **Historical document.** Preserved exactly as written during the spike and
+> upgrade phases. It is superseded by the final submission state described in
+> README.md and SUBMISSION.md, and is kept only for traceability.
+
 ## Cadre
 
 - Début : 2026-08-25T00:21:55+02:00.

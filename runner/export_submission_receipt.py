@@ -195,6 +195,20 @@ def correlated_executed_writes(
     ]
 
 
+def correlate_sandbox_exec_calls(
+    calls: list[dict[str, Any]],
+    sandbox_ids: list[str],
+) -> list[dict[str, Any]]:
+    """Bind every sandbox execution to the one sandbox created for this session.
+
+    The raw tenant-scoped id stays private. A receipt is only exportable when the
+    session contains exactly one Daytona sandbox, so the shared SHA-256 digest is
+    an unambiguous non-secret correlation value.
+    """
+    digest = hashlib.sha256(sandbox_ids[0].encode("utf-8")).hexdigest() if len(sandbox_ids) == 1 else None
+    return [{**call, "sandbox_id_sha256": digest} for call in calls]
+
+
 def list_events(base_url: str, session_id: str, turn_id: str) -> list[dict[str, Any]]:
     path = f"/sessions/{quote(session_id, safe='')}/turns/{quote(turn_id, safe='')}/events"
     events: list[dict[str, Any]] = []
@@ -329,6 +343,7 @@ def main() -> int:
     approvals: list[dict[str, Any]] = []
     decisions: list[dict[str, Any]] = []
     sandbox_events = [event for event in events if event.get("type") == "sandbox.created"]
+    sandbox_ids = [event.get("sandbox_id") for event in sandbox_events if event.get("sandbox_id")]
     verifier_events = [
         event
         for event in events
@@ -345,20 +360,30 @@ def main() -> int:
                 "responded_at": event.get("created_at"),
             }
         elif event.get("type") == "tool.approval_required":
-            approvals.extend(
-                {
-                    "approval_event_id": event.get("id"),
-                    "tool_call_id": call.get("id"),
-                    "requested_at": event.get("created_at"),
-                }
-                for call in event.get("tool_calls") or []
-            )
+            for call in event.get("tool_calls") or []:
+                approval_call = effective_call(call, event)
+                approvals.append(
+                    {
+                        "approval_event_id": event.get("id"),
+                        "event_type": event.get("type"),
+                        "thread_id": approval_call.get("thread_id"),
+                        "tool_call_id": approval_call.get("tool_call_id"),
+                        "tool": approval_call.get("tool"),
+                        "tool_type": approval_call.get("tool_type"),
+                        "server": approval_call.get("server"),
+                        "transport_tool": approval_call.get("transport_tool"),
+                        "mission_id": approval_call.get("mission_id"),
+                        "requested_at": event.get("created_at"),
+                    }
+                )
         elif event.get("type") == "turn.created":
             for item in event.get("input") or []:
                 if item.get("type") == "user.tool_approval":
                     approval = item.get("approval") or {}
                     decisions.append(
                         {
+                            "event_type": event.get("type"),
+                            "input_type": item.get("type"),
                             "tool_call_id": item.get("tool_call_id"),
                             "actor": "human_via_trueforge_ui",
                             "decision": approval.get("status"),
@@ -387,14 +412,14 @@ def main() -> int:
         in json.dumps(responses.get(call["tool_call_id"], {}).get("payload"), ensure_ascii=False)
     ]
     sandbox_pass_ids = {call.get("tool_call_id") for call in sandbox_pass_calls}
-    sandbox_evidence_calls = [
+    sandbox_evidence_calls = correlate_sandbox_exec_calls([
         {
             **call,
             "responded_at": responses.get(call.get("tool_call_id"), {}).get("responded_at"),
             "validation_pass_observed": call.get("tool_call_id") in sandbox_pass_ids,
         }
         for call in sandbox_calls
-    ]
+    ], sandbox_ids)
     verifier_calls = [call for call in calls if call.get("thread_id") in verifier_thread_ids]
     mission_id = observed_mission_id(calls, responses)
     verifier_tools = {
@@ -427,6 +452,26 @@ def main() -> int:
     approved_write_ids = {item.get("tool_call_id") for item in approvals} & write_call_ids
     allowed_write_decisions = [
         item for item in decisions if item.get("tool_call_id") in write_call_ids and item.get("decision") == "allow"
+    ]
+    native_approval_events = [
+        item
+        for item in approvals
+        if item.get("tool_call_id") in write_call_ids
+        and item.get("approval_event_id")
+        and item.get("event_type") == "tool.approval_required"
+        and item.get("thread_id") == "main"
+        and item.get("tool") == "execute_rollback"
+        and item.get("tool_type") == "mcp"
+        and item.get("server") == MCP_NAME
+        and item.get("transport_tool") == "execute_rollback"
+        and item.get("mission_id") == mission_id
+    ]
+    human_allow_inputs = [
+        item
+        for item in allowed_write_decisions
+        if item.get("event_type") == "turn.created"
+        and item.get("input_type") == "user.tool_approval"
+        and item.get("actor") == "human_via_trueforge_ui"
     ]
 
     pass_times = [
@@ -468,7 +513,6 @@ def main() -> int:
     agent = get_json(args.base_url, f"/agents/{quote(str(agent_ref.get('id', '')), safe='')}").get("data", {})
     model = ((agent.get("manifest") or {}).get("model") or {}).get("name", "unknown/unknown")
     provider, _, model_name = model.partition("/")
-    sandbox_ids = [event.get("sandbox_id") for event in sandbox_events if event.get("sandbox_id")]
     sandbox_provider = get_json(args.base_url, "/settings/sandbox-providers").get("data", {})
     daytona_ready = is_daytona_provider_ready(sandbox_provider)
 
@@ -479,8 +523,10 @@ def main() -> int:
         "verifier_used_real_mcp": {"inspect_incident", "prepare_rollback"}.issubset(verifier_tools),
         "verifier_never_attempted_write": all(call.get("tool") != "execute_rollback" for call in verifier_calls),
         "daytona_provider_ready": daytona_ready,
-        "daytona_sandbox_created": bool(sandbox_ids) and all(is_daytona_sandbox_id(item) for item in sandbox_ids),
-        "sandbox_exec_observed": bool(sandbox_calls),
+        "daytona_sandbox_created": len(sandbox_ids) == 1 and all(is_daytona_sandbox_id(item) for item in sandbox_ids),
+        "sandbox_exec_observed": bool(sandbox_evidence_calls)
+        and len(sandbox_ids) == 1
+        and all(call.get("sandbox_id_sha256") for call in sandbox_evidence_calls),
         "sandbox_generated_code_uses_mcp_bridge": bool(sandbox_mcp_bridge_calls),
         "sandbox_validator_read_only": bool(sandbox_pass_calls)
         and all(
@@ -490,8 +536,8 @@ def main() -> int:
         "sandbox_validation_pass_observed": bool(sandbox_pass_calls),
         "sandbox_validation_before_write": bool(pass_times and write_attempt_times)
         and min(pass_times) < min(write_attempt_times),
-        "native_approval_pause_for_write": bool(approved_write_ids),
-        "human_allow_for_write": bool(allowed_write_decisions),
+        "native_approval_pause_for_write": len(approved_write_ids) == 1 and len(native_approval_events) == 1,
+        "human_allow_for_write": len(allowed_write_decisions) == 1 and len(human_allow_inputs) == 1,
         "write_response_after_human_allow": bool(decision_times and executed_response_times)
         and min(decision_times) < min(executed_response_times),
         "authorized_rollback_executed_once": len(executed_writes) == 1 and len(authorized_executed_writes) == 1,
@@ -521,7 +567,7 @@ def main() -> int:
 
     timestamps = [event.get("created_at") for event in events if event.get("created_at")]
     receipt = {
-        "schema_version": "2.0.0",
+        "schema_version": "2.1.0",
         "receipt_kind": "trueforge-safe-rollback-acceptance",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": "TrueForge 0.1.4 persisted public APIs",

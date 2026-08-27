@@ -11,15 +11,67 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+# Markup values the application must derive from the validated receipt. Keeping
+# them out of the static HTML prevents a stale operational claim from surviving
+# a failed or replaced receipt.
+RECEIPT_DERIVED_IDS = (
+    "mission-id",
+    "incident-time",
+    "incident-rate",
+    "node-check-count",
+    "authority-change",
+    "from-version",
+    "to-version",
+    "before-rate",
+    "after-rate",
+    "verifier-time",
+    "sandbox-time",
+    "approval-time",
+    "receipt-check-count",
+    "receipt-check-total",
+    "proof-summary",
+    "receipt-date",
+)
+
+
 class IdCollector(HTMLParser):
-    def __init__(self) -> None:
+    """Collects element ids and, for the receipt-derived ones, their static text."""
+
+    def __init__(self, tracked: tuple[str, ...] = ()) -> None:
         super().__init__()
         self.ids: set[str] = set()
+        self.text: dict[str, str] = {}
+        self._tracked = set(tracked)
+        self._current: str | None = None
+        self._depth = 0
 
     def handle_starttag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        element_id = next((value for name, value in attrs if name == "id" and value), None)
+        if element_id:
+            self.ids.add(element_id)
+        if self._current is not None:
+            self._depth += 1
+        elif element_id in self._tracked:
+            self._current = element_id
+            self._depth = 0
+            self.text[element_id] = ""
+
+    def handle_startendtag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
         for name, value in attrs:
             if name == "id" and value:
                 self.ids.add(value)
+
+    def handle_endtag(self, _tag: str) -> None:
+        if self._current is None:
+            return
+        if self._depth == 0:
+            self._current = None
+        else:
+            self._depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._current is not None:
+            self.text[self._current] += data
 
 
 class EvidenceConsoleTests(unittest.TestCase):
@@ -69,6 +121,25 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertIn('data-evidence-status="loading"', html)
         self.assertNotIn("Agents can prepare. Humans authorize.", html)
         self.assertNotIn("SUBMISSION_ACCEPTANCE_PASS", html)
+
+    def test_markup_carries_no_hardcoded_operational_values(self) -> None:
+        html = (ROOT / "evidence_console" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "evidence_console" / "app.js").read_text(encoding="utf-8")
+        parser = IdCollector(RECEIPT_DERIVED_IDS)
+        parser.feed(html)
+
+        for element_id in RECEIPT_DERIVED_IDS:
+            self.assertIn(element_id, parser.text, f"missing element #{element_id}")
+            placeholder = parser.text[element_id].strip()
+            self.assertTrue(placeholder, f"#{element_id} must keep a visible placeholder")
+            self.assertIsNone(
+                re.search(r"\d", placeholder),
+                f"#{element_id} must not hardcode the operational value {placeholder!r}",
+            )
+            self.assertIn(f"setText('{element_id}'", script, f"#{element_id} is never filled from the receipt")
+
+        for stale in ("18.4%", "0.7%", "v42", "v41", "22 / 22", "22/22", "TF-SAFE-ROLLBACK-001", "2026-08-25"):
+            self.assertNotIn(stale, html, f"static markup must not restate {stale}")
 
     def test_small_label_contrast_meets_wcag_aa(self) -> None:
         css = (ROOT / "evidence_console" / "styles.css").read_text(encoding="utf-8")

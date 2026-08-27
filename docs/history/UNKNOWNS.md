@@ -1,5 +1,9 @@
 # UNKNOWNS — surfaces TrueForge vérifiées
 
+> **Historical document.** Preserved exactly as written during the spike and
+> upgrade phases. It is superseded by the final submission state described in
+> README.md and SUBMISSION.md, and is kept only for traceability.
+
 Les surfaces ont été vérifiées après le squelette initial. Les réponses proviennent de la documentation officielle ou de l'API publique TrueForge 0.1.4.
 
 | Id | Question | Statut | Réponse / source officielle |

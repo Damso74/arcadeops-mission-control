@@ -1,5 +1,9 @@
 # SPIKE_PLAN — TrueForge : Mission → agent → sandbox → approbation réelle → reprise → preuve
 
+> **Historical document.** Preserved exactly as written during the spike and
+> upgrade phases. It is superseded by the final submission state described in
+> README.md and SUBMISSION.md, and is kept only for traceability.
+
 - Statut du plan : **arrêté sur NO-GO environnemental après démarrage réussi**.
 - Fenêtre : démarrage `2026-08-24 11:07:42 CEST`, limite absolue `2026-08-24 12:37:42 CEST`.
 - Dépôt : `C:\Users\credo\Documents\ChatGPT\True Forge` (dédié au spike, aucun lien avec ArcadeOps).

@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0.0",
+  "schema_version": "2.1.0",
   "receipt_kind": "trueforge-safe-rollback-acceptance",
   "generated_at": "2026-08-25T13:42:53.901778Z",
   "source": "TrueForge 0.1.4 persisted public APIs",
@@ -74,6 +74,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:36:46.723Z",
       "sandbox_command_evidence": {
         "intent": "Inspect the incident via governed-operations MCP and capture output structure",
@@ -99,6 +100,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:36:52.406Z",
       "sandbox_command_evidence": {
         "intent": "Check the mcp-client CLI tool for issues",
@@ -122,6 +124,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:36:58.971Z",
       "sandbox_command_evidence": {
         "intent": "Run mcp-client via python3 directly to bypass shebang CRLF issue",
@@ -147,6 +150,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:37:03.849Z",
       "sandbox_command_evidence": {
         "intent": "Extract and display the actual inspect_incident result content",
@@ -170,6 +174,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:37:14.042Z",
       "sandbox_command_evidence": {
         "intent": "Display the actual inspect_incident result content",
@@ -193,6 +198,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:37:20.193Z",
       "sandbox_command_evidence": {
         "intent": "Verify raw file content directly",
@@ -216,6 +222,7 @@
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
+      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
       "attempted_at": "2026-08-25T09:38:39.556Z",
       "sandbox_command_evidence": {
         "intent": "Create a fail-closed Python validator that calls inspect_incident and prepare_rollback via the sandbox mcp_client bridge and checks all required invariants",
@@ -239,12 +246,21 @@
   "approval_requests": [
     {
       "approval_event_id": "01m0w4jpx4pkmvrz6bxw32g25r",
+      "event_type": "tool.approval_required",
+      "thread_id": "main",
       "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
+      "tool": "execute_rollback",
+      "tool_type": "mcp",
+      "server": "governed-operations",
+      "transport_tool": "execute_rollback",
+      "mission_id": "TF-SAFE-ROLLBACK-001",
       "requested_at": "2026-08-25T09:38:46.820Z"
     }
   ],
   "human_decisions": [
     {
+      "event_type": "turn.created",
+      "input_type": "user.tool_approval",
       "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
       "actor": "human_via_trueforge_ui",
       "decision": "allow",

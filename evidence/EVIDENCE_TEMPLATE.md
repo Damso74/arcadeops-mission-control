@@ -66,4 +66,4 @@ Un `PASS` sans référence de preuve brute est invalide.
 - Parcours `Mission → agent → sandbox → approbation réelle → reprise → preuve` :
   `FAISABLE` / `NON FAISABLE` / `INDÉTERMINÉ` — rayer les mentions inutiles, justifier :
 - Premier point de rupture (le cas échéant) :
-- Inconnues restées ouvertes (renvoi à `UNKNOWNS.md`) :
+- Inconnues restées ouvertes (renvoi à `docs/history/UNKNOWNS.md`) :

@@ -1,5 +1,9 @@
 # Décision du spike TrueForge
 
+> **Historical document.** Preserved exactly as written during the spike and
+> upgrade phases. It is superseded by the final submission state described in
+> README.md and SUBMISSION.md, and is kept only for traceability.
+
 ## Spike 1 — 24 août 2026
 
 ### Verdict
@@ -110,9 +114,9 @@ Le code contient un fallback sandbox local, mais seulement en mode standalone Li
 ### Preuves
 
 - Historique du Spike 1 : [`SPIKE_LOG.md`](SPIKE_LOG.md)
-- Reçu historique honnête : [`evidence/evidence-receipt.json`](evidence/evidence-receipt.json)
-- Instructions de reprise : [`ENVIRONMENT_SETUP.md`](ENVIRONMENT_SETUP.md)
-- Vérificateur local : [`runner/resume_requalification.ps1`](runner/resume_requalification.ps1)
+- Reçu historique honnête : [`evidence/evidence-receipt.json`](../../evidence/evidence-receipt.json)
+- Instructions de reprise : [`ENVIRONMENT_SETUP.md`](../../ENVIRONMENT_SETUP.md)
+- Vérificateur local : [`runner/resume_requalification.ps1`](../../runner/resume_requalification.ps1)
 - Règles officielles : <https://www.wemakedevs.org/hackathons/trueforge/rules>
 - Documentation sandbox : <https://trueforge.dev/sandbox>
 

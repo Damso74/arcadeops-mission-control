@@ -22,6 +22,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify the published Evidence Receipt
+        run: node --test evidence_console/test_receipt_validator.mjs
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

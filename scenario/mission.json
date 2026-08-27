@@ -49,7 +49,7 @@
       "performed_by_runner": false,
       "expected": "approved_by_identified_human",
       "checkpoint": "APPROVAL_AND_RESUME",
-      "$note": "Le runner ne doit posséder aucun moyen d'émettre cette décision. Voir la règle anti-faux-PASS de SPIKE_PLAN.md §5."
+      "$note": "Le runner ne doit posséder aucun moyen d'émettre cette décision. Voir la règle anti-faux-PASS de docs/history/SPIKE_PLAN.md §5."
     },
     {
       "id": "S5",
@@ -69,7 +69,7 @@
     }
   ],
   "acceptance": {
-    "$comment": "Rappel exécutable de SPIKE_PLAN.md §5.",
+    "$comment": "Rappel exécutable de docs/history/SPIKE_PLAN.md §5.",
     "allowed_statuses": ["NOT_RUN", "BLOCKED_UNKNOWN_API", "FAIL", "PASS"],
     "default_status": "NOT_RUN",
     "pass_requires_raw_evidence": true,

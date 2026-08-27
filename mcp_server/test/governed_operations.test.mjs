@@ -22,6 +22,10 @@ const SHUTDOWN_TIMEOUT_MS = 5_000;
 const EXPECTED_TOOLS = ['execute_rollback', 'export_evidence', 'inspect_incident', 'prepare_rollback'];
 const TEST_AUTH_TOKEN = 'test-only-token-'.padEnd(64, 'x');
 const TEST_AGENT_IDENTITY = 'arcadeops-mission-control';
+// The shipped contract must keep a real expiry, and that expiry must stay far
+// enough in the future to cover the submission review window. The bound is a
+// fixed instant so the assertion never depends on when the suite is executed.
+const MINIMUM_SHIPPED_EXPIRY_MS = Date.parse('2026-10-31T00:00:00Z');
 
 async function startServer(environment) {
   const child = spawn(process.execPath, [serverPath], {
@@ -78,6 +82,25 @@ async function stopServer(child) {
   await exited;
   clearTimeout(timer);
 }
+
+describe('Shipped AuthorityContract', () => {
+  it('keeps a bounded expiry that still covers the review window', async () => {
+    const shipped = JSON.parse(await readFile(shippedAuthorityPath, 'utf8'));
+
+    assert.ok(
+      Object.hasOwn(shipped, 'expires_at'),
+      'the shipped AuthorityContract must keep an expires_at bound',
+    );
+    assert.equal(typeof shipped.expires_at, 'string');
+
+    const expiresAt = Date.parse(shipped.expires_at);
+    assert.ok(Number.isFinite(expiresAt), `expires_at is not a parseable instant: ${shipped.expires_at}`);
+    assert.ok(
+      expiresAt >= MINIMUM_SHIPPED_EXPIRY_MS,
+      `expires_at ${shipped.expires_at} is earlier than the required 2026-10-31T00:00:00Z bound`,
+    );
+  });
+});
 
 describe('Safe Rollback MCP server (black-box)', { timeout: 120_000 }, () => {
   let workspace;
