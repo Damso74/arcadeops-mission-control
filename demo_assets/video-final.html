@@ -35,7 +35,10 @@ const imageSources = [
   '02-sandbox-validation.png',
   '03-human-allow.png',
   '04-postcondition-authority.png',
-  '04-submission-receipt.png'
+  '04-submission-receipt.png',
+  '05-authority-ledger.png',
+  '06-challenge-rejected.png',
+  '07-portable-evidence.png'
 ];
 const images = imageSources.map(src => { const image = new Image(); image.src = src; return image; });
 const sceneStops = [0, 0.10, 0.21, 0.36, 0.52, 0.68, 0.81, 0.93, 1];
@@ -194,6 +197,23 @@ function drawEvidenceScene(index, progress, alpha, titleLines, pill, activeStep)
   ctx.restore();
 }
 
+function drawLedgerScene(progress) {
+  drawBrandHeader('PUBLIC AUTHORITY LEDGER');
+  const phases = [
+    { stop: 0, image: images[5], title: 'Inspect every persisted correlation.', pill: '1 IDENTITY · 1 WRITE' },
+    { stop: 0.42, image: images[6], title: 'Break the copy. Claims disappear.', pill: 'MODIFIED RECEIPT REJECTED' },
+    { stop: 0.74, image: images[7], title: 'Verify the chain independently.', pill: '22 / 22 · PORTABLE CLI' },
+  ];
+  const phaseIndex = progress >= phases[2].stop ? 2 : progress >= phases[1].stop ? 1 : 0;
+  const phase = phases[phaseIndex];
+  const nextStop = phases[phaseIndex + 1]?.stop ?? 1;
+  const phaseProgress = clamp((progress - phase.stop) / (nextStop - phase.stop));
+  text([phase.title], 66, 132, 30, ink, 680, 1.08, 'Georgia');
+  drawPill(phase.pill, phaseIndex === 1 ? 952 : 994, 108, phaseIndex === 1 ? '#ff7c74' : green);
+  drawScreenshot(phase.image, phaseProgress, 1);
+  text(['REAL RECEIPT · SAME FAIL-CLOSED VALIDATOR'], 66, 686, 11, muted, 760);
+}
+
 function drawScene(index, progress, alpha) {
   ctx.save(); ctx.globalAlpha *= alpha;
   if (index === 0) {
@@ -232,7 +252,7 @@ function drawScene(index, progress, alpha) {
   } else if (index === 5) {
     drawEvidenceScene(index, progress, 1, ['Recovery is re-inspected.', 'Scope still wins.'], 'v41 · HEALTHY · 0.7%', 3);
   } else if (index === 6) {
-    drawEvidenceScene(index, progress, 1, ['Persisted evidence,', 'exported fail-closed.'], '22 / 22 CHECKS PASSED', 4);
+    drawLedgerScene(progress);
   } else {
     const enter = easeOut(progress * 2.2);
     drawMark(568, 108 + (1 - enter) * 18, 144, enter);

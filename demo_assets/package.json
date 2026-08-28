@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "capture:ledger": "node capture_ledger_video.mjs",
     "preview": "node preview_video.mjs",
     "render": "node render_video.mjs",
     "verify": "node verify_video.mjs"

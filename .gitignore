@@ -30,6 +30,9 @@ mcp_server/data/records.json
 
 # --- Médias de démonstration générés localement ---
 demo_assets/*.png
+!demo_assets/05-authority-ledger.png
+!demo_assets/06-challenge-rejected.png
+!demo_assets/07-portable-evidence.png
 demo_assets/*.mp3
 demo_assets/*.wav
 demo_assets/*.webm
