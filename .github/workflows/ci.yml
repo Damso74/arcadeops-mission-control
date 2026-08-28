@@ -59,6 +59,7 @@ jobs:
           node --check render_video.mjs
           node --check verify_video.mjs
           node --check verify_console.mjs
+          node --check capture_ledger_video.mjs
           npm audit --audit-level=high
 
       - name: Verify rendered Authority Ledger

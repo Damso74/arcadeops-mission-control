@@ -41,7 +41,7 @@ try {
     throw new Error("Audio check failed: no audio track is present");
   }
 
-  const sampleTimes = [0.04, 0.20, 0.42, 0.62, 0.82, 0.96].map(
+  const sampleTimes = [0.04, 0.20, 0.42, 0.62, 0.82, 0.87, 0.90, 0.92, 0.96].map(
     (ratio) => ratio * before.duration,
   );
   const frameSignatures = [];
@@ -92,7 +92,7 @@ try {
   }
 
   const uniqueFrameCount = new Set(frameSignatures.map(({ signature }) => signature)).size;
-  if (uniqueFrameCount < 5) {
+  if (uniqueFrameCount < 8) {
     throw new Error(
       `Visual progression check failed: only ${uniqueFrameCount}/${frameSignatures.length} distinct sampled frames`,
     );
