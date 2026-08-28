@@ -58,4 +58,15 @@ jobs:
           node --check preview_video.mjs
           node --check render_video.mjs
           node --check verify_video.mjs
+          node --check verify_console.mjs
           npm audit --audit-level=high
+
+      - name: Verify rendered Authority Ledger
+        working-directory: demo_assets
+        run: |
+          npx playwright install --with-deps chromium
+          cd ..
+          python -m http.server 4173 --bind 127.0.0.1 >/tmp/arcadeops-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          node demo_assets/verify_console.mjs
