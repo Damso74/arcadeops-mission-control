@@ -41,7 +41,9 @@ const imageSources = [
   '07-portable-evidence.png'
 ];
 const images = imageSources.map(src => { const image = new Image(); image.src = src; return image; });
-const sceneStops = [0, 0.10, 0.21, 0.36, 0.52, 0.68, 0.81, 0.93, 1];
+// Absolute narration boundaries keep the visuals auditable and independent of
+// small metadata differences in the encoded audio duration.
+const sceneStopsSeconds = [0, 12, 25, 43, 62, 81, 96, 110];
 const copper = '#d88a4c';
 const copperLight = '#f2b87d';
 const ink = '#f6f0e7';
@@ -197,17 +199,17 @@ function drawEvidenceScene(index, progress, alpha, titleLines, pill, activeStep)
   ctx.restore();
 }
 
-function drawLedgerScene(progress) {
+function drawLedgerScene(t) {
   drawBrandHeader('PUBLIC AUTHORITY LEDGER');
   const phases = [
-    { stop: 0, image: images[5], title: 'Inspect every persisted correlation.', pill: '1 IDENTITY · 1 WRITE' },
-    { stop: 0.55, image: images[7], title: 'Verify the chain independently.', pill: '22 / 22 · PORTABLE CLI' },
-    { stop: 0.80, image: images[6], title: 'Break the copy. Claims disappear.', pill: 'MODIFIED RECEIPT REJECTED' },
+    { start: 96, image: images[5], title: 'Inspect every persisted correlation.', pill: '1 IDENTITY · 1 WRITE' },
+    { start: 103, image: images[7], title: 'Verify the chain independently.', pill: '22 / 22 · PORTABLE CLI' },
+    { start: 107, image: images[6], title: 'Break the copy. Claims disappear.', pill: 'MODIFIED RECEIPT REJECTED' },
   ];
-  const phaseIndex = progress >= phases[2].stop ? 2 : progress >= phases[1].stop ? 1 : 0;
+  const phaseIndex = t >= phases[2].start ? 2 : t >= phases[1].start ? 1 : 0;
   const phase = phases[phaseIndex];
-  const nextStop = phases[phaseIndex + 1]?.stop ?? 1;
-  const phaseProgress = clamp((progress - phase.stop) / (nextStop - phase.stop));
+  const nextStart = phases[phaseIndex + 1]?.start ?? 110;
+  const phaseProgress = clamp((t - phase.start) / (nextStart - phase.start));
   text([phase.title], 66, 132, 30, ink, 680, 1.08, 'Georgia');
   drawPill(phase.pill, phaseIndex === 2 ? 952 : 994, 108, phaseIndex === 2 ? '#ff7c74' : green);
   drawScreenshot(phase.image, phaseProgress, 1);
@@ -252,7 +254,7 @@ function drawScene(index, progress, alpha) {
   } else if (index === 5) {
     drawEvidenceScene(index, progress, 1, ['Recovery is re-inspected.', 'Scope still wins.'], 'v41 · HEALTHY · 0.7%', 3);
   } else if (index === 6) {
-    drawLedgerScene(progress);
+    drawLedgerScene(96 + progress * 14);
   } else {
     const enter = easeOut(progress * 2.2);
     drawMark(568, 108 + (1 - enter) * 18, 144, enter);
@@ -273,10 +275,11 @@ function draw() {
   const ratio = previewRatio ?? clamp(liveTime / duration);
   const t = previewRatio === null ? liveTime : previewRatio * duration;
   drawBackground(t);
-  let sceneIndex = sceneStops.findIndex((stop, index) => index < sceneStops.length - 1 && ratio >= stop && ratio < sceneStops[index + 1]);
+  const sceneStops = [...sceneStopsSeconds, duration];
+  let sceneIndex = sceneStops.findIndex((stop, index) => index < sceneStops.length - 1 && t >= stop && t < sceneStops[index + 1]);
   if (sceneIndex < 0) sceneIndex = sceneStops.length - 2;
-  const start = sceneStops[sceneIndex] * duration;
-  const end = sceneStops[sceneIndex + 1] * duration;
+  const start = sceneStops[sceneIndex];
+  const end = sceneStops[sceneIndex + 1];
   const progress = clamp((t - start) / (end - start));
   const fadeWindow = 2.8;
   if (sceneIndex < sceneStops.length - 2 && end - t < fadeWindow) {
