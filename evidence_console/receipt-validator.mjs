@@ -315,8 +315,14 @@ export function validateReceiptReport(receipt) {
     const evidence = validateReceipt(receipt);
     return { valid: true, code: 'RECEIPT_VERIFIED', message: 'The complete authority chain is valid.', evidence };
   } catch (error) {
-    if (!(error instanceof ReceiptValidationError)) throw error;
-    return { valid: false, code: error.code, message: error.message.replace(/^Receipt rejected:\s*/, '') };
+    if (error instanceof ReceiptValidationError) {
+      return { valid: false, code: error.code, message: error.message.replace(/^Receipt rejected:\s*/, '') };
+    }
+    return {
+      valid: false,
+      code: 'RECEIPT_MALFORMED',
+      message: 'Receipt structure is malformed and cannot establish authority.',
+    };
   }
 }
 
@@ -330,23 +336,98 @@ export function validateAuthorityTrial(receipt) {
   requireThat(Array.isArray(receipt.human_decisions) && receipt.human_decisions.length === 2, 'trial requires one Deny and one Allow');
   requireThat(Array.isArray(receipt.actions_executed) && receipt.actions_executed.length === 1, 'trial requires exactly one executed write');
   requireThat(Array.isArray(receipt.actions_blocked) && receipt.actions_blocked.length === 2, 'trial requires two blocked actions');
+  requireThat(Array.isArray(receipt.actions_attempted), 'trial action attempts are missing');
+  requireThat(receipt.approval_requests.every(isRecord), 'trial approval request is malformed');
+  requireThat(receipt.human_decisions.every(isRecord), 'trial human decision is malformed');
+  requireThat(receipt.actions_executed.every(isRecord), 'trial executed action is malformed');
+  requireThat(receipt.actions_blocked.every(isRecord), 'trial blocked action is malformed');
+  requireThat(receipt.actions_attempted.every(isRecord), 'trial action attempt is malformed');
+
+  const approvalCallIds = receipt.approval_requests.map(request => request.tool_call_id);
+  const approvalEventIds = receipt.approval_requests.map(request => request.approval_event_id);
+  requireThat(
+    receipt.approval_requests.every(request => (
+      isNonEmptyString(request.turn_id)
+      && isNonEmptyString(request.tool_call_id)
+      && isNonEmptyString(request.approval_event_id)
+      && request.status === 'required'
+    )),
+    'trial native approval request provenance is incomplete',
+  );
+  requireThat(new Set(approvalCallIds).size === 2, 'trial approval requests do not have unique call identities');
+  requireThat(new Set(approvalEventIds).size === 2, 'trial approval requests do not have unique event identities');
+  receipt.approval_requests.forEach(request => requireTimestamp(request.requested_at, 'trial approval request'));
 
   const deny = receipt.human_decisions.find(decision => decision.decision === 'deny');
   const allow = receipt.human_decisions.find(decision => decision.decision === 'allow');
-  requireThat(deny?.actor === 'human_via_trueforge_ui', 'trial human Deny is missing');
-  requireThat(allow?.actor === 'human_via_trueforge_ui', 'trial human Allow is missing');
+  requireThat(deny?.actor === 'human_via_trueforge_ui' && isNonEmptyString(deny.tool_call_id), 'trial human Deny is missing');
+  requireThat(allow?.actor === 'human_via_trueforge_ui' && isNonEmptyString(allow.tool_call_id), 'trial human Allow is missing');
+
+  const denyApproval = receipt.approval_requests.find(request => request.tool_call_id === deny.tool_call_id);
+  const allowApproval = receipt.approval_requests.find(request => request.tool_call_id === allow.tool_call_id);
+  requireThat(denyApproval && allowApproval && denyApproval !== allowApproval, 'trial decisions are not correlated to distinct native approval requests');
+  const denyDecisionTime = requireTimestamp(deny.decided_at, 'trial human Deny');
+  const allowDecisionTime = requireTimestamp(allow.decided_at, 'trial human Allow');
+  requireThat(requireTimestamp(denyApproval.requested_at, 'trial Deny approval') <= denyDecisionTime, 'trial Deny predates its approval request');
+  requireThat(requireTimestamp(allowApproval.requested_at, 'trial Allow approval') <= allowDecisionTime, 'trial Allow predates its approval request');
 
   const humanBlock = receipt.actions_blocked.find(action => action.authority === 'human_approval_gate');
   const contractBlock = receipt.actions_blocked.find(action => action.authority === 'AuthorityContract');
   const executed = receipt.actions_executed[0];
-  requireThat(humanBlock?.tool_call_id === deny.tool_call_id && humanBlock?.state_changed === false, 'trial Deny is not correlated to a no-write result');
-  requireThat(executed?.tool_call_id === allow.tool_call_id, 'trial Allow is not correlated to the executed write');
-  requireThat(contractBlock?.state_changed === false && /AUTHORITY_DENIED/.test(contractBlock?.reason || ''), 'trial contract refusal is missing');
+  const denyAttempt = receipt.actions_attempted.find(action => action.tool_call_id === deny.tool_call_id);
+  const allowAttempt = receipt.actions_attempted.find(action => action.tool_call_id === allow.tool_call_id);
+  const contractAttempt = receipt.actions_attempted.find(action => action.tool_call_id === contractBlock?.tool_call_id);
+  requireThat(
+    denyAttempt?.tool === 'apply_status_change'
+    && denyAttempt?.tool_type === 'mcp'
+    && denyAttempt?.server === 'governed-operations'
+    && denyAttempt?.arguments?.mission_id === receipt.mission_id
+    && denyAttempt?.status === 'blocked_by_human',
+    'trial Deny attempt is not a governed write',
+  );
+  requireThat(
+    humanBlock?.tool_call_id === deny.tool_call_id
+    && humanBlock?.tool === 'apply_status_change'
+    && humanBlock?.state_changed === false
+    && requireTimestamp(humanBlock.blocked_at, 'trial human block') >= denyDecisionTime,
+    'trial Deny is not correlated to a no-write result',
+  );
+  requireThat(
+    allowAttempt?.tool === 'apply_status_change'
+    && allowAttempt?.tool_type === 'mcp'
+    && allowAttempt?.server === 'governed-operations'
+    && allowAttempt?.arguments?.mission_id === receipt.mission_id
+    && allowAttempt?.status === 'executed',
+    'trial Allow attempt is not a governed write',
+  );
+  requireThat(
+    executed?.tool_call_id === allow.tool_call_id
+    && executed?.tool === 'apply_status_change'
+    && isNonEmptyString(executed?.action_id)
+    && isNonEmptyString(executed?.record_id)
+    && isNonEmptyString(executed?.before)
+    && isNonEmptyString(executed?.after)
+    && executed.before !== executed.after
+    && requireTimestamp(executed.executed_at, 'trial executed write') > allowDecisionTime,
+    'trial Allow is not correlated to a governed executed write',
+  );
+  requireThat(
+    contractBlock?.tool === 'prepare_status_change'
+    && contractBlock?.state_changed === false
+    && /AUTHORITY_DENIED/.test(contractBlock?.reason || '')
+    && contractAttempt?.tool === 'prepare_status_change'
+    && contractAttempt?.tool_type === 'mcp'
+    && contractAttempt?.server === 'governed-operations'
+    && contractAttempt?.arguments?.mission_id === receipt.mission_id
+    && contractAttempt?.status === 'blocked_by_authority'
+    && requireTimestamp(contractBlock.blocked_at, 'trial contract block') >= requireTimestamp(contractAttempt.attempted_at, 'trial contract attempt'),
+    'trial contract refusal is missing',
+  );
   requireThat(receipt.sandbox_provider === null && receipt.subagent_events?.length === 0, 'trial overstates unavailable sandbox or subagent evidence');
 
   const checks = receipt.verification_results;
   requireThat(isRecord(checks) && Object.values(checks).every(value => value === true), 'trial verification results are incomplete');
   requireThat(checks.human_deny_observed && checks.human_allow_observed && checks.authority_denial_observed, 'trial authority outcomes are incomplete');
 
-  return { deny, allow, executed, humanBlock, contractBlock, checks };
+  return { deny, allow, denyApproval, allowApproval, executed, humanBlock, contractBlock, checks };
 }

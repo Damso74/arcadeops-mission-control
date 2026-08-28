@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { REQUIRED_CHECKS } from '../evidence_console/receipt-validator.mjs';
 
 const baseUrl = (process.env.DEMO_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '');
 const consoleUrl = `${baseUrl}/evidence_console/`;
@@ -49,8 +50,9 @@ try {
         assert(await page.locator('#challenge-claims').innerText() === '0 displayed', `${mutation}: claims remained visible`);
       }
       await page.getByRole('tab', { name: 'Evidence' }).click();
-      assert(await page.locator('#receipt-check-count').innerText() === '22', 'receipt check count mismatch');
-      assert(await page.locator('#receipt-check-total').innerText() === '22', 'receipt check total mismatch');
+      const expectedChecks = String(REQUIRED_CHECKS.length);
+      assert(await page.locator('#receipt-check-count').innerText() === expectedChecks, 'receipt check count mismatch');
+      assert(await page.locator('#receipt-check-total').innerText() === expectedChecks, 'receipt check total mismatch');
     }
     await page.close();
   }

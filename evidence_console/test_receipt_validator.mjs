@@ -106,6 +106,17 @@ test('returns a stable adversarial-verification report', () => {
   assert.match(report.message, /exactly one executed write/);
 });
 
+test('returns a fail-closed report for malformed records', () => {
+  const receipt = copy();
+  receipt.verifier_tool_calls[0] = null;
+  const report = validateReceiptReport(receipt);
+  assert.deepEqual(report, {
+    valid: false,
+    code: 'RECEIPT_MALFORMED',
+    message: 'Receipt structure is malformed and cannot establish authority.',
+  });
+});
+
 test('validates the persisted Deny, Allow, and contract-refusal trial', async () => {
   const trial = JSON.parse(
     await readFile(new URL('../evidence/go-pivot-evidence-receipt.json', import.meta.url), 'utf8'),
@@ -119,4 +130,35 @@ test('validates the persisted Deny, Allow, and contract-refusal trial', async ()
   const fabricated = structuredClone(trial);
   fabricated.actions_blocked[0].state_changed = true;
   assert.throws(() => validateAuthorityTrial(fabricated), /no-write result/);
+
+  const arbitraryApprovals = structuredClone(trial);
+  arbitraryApprovals.approval_requests = [{}, {}];
+  assert.throws(() => validateAuthorityTrial(arbitraryApprovals), /approval request provenance/);
+
+  const uncorrelatedApproval = structuredClone(trial);
+  uncorrelatedApproval.approval_requests[0].tool_call_id = 'different-call';
+  assert.throws(() => validateAuthorityTrial(uncorrelatedApproval), /not correlated/);
+
+  const duplicateApprovalEvent = structuredClone(trial);
+  duplicateApprovalEvent.approval_requests[1].approval_event_id = duplicateApprovalEvent.approval_requests[0].approval_event_id;
+  assert.throws(() => validateAuthorityTrial(duplicateApprovalEvent), /unique event identities/);
+
+  const unrelatedExecution = structuredClone(trial);
+  unrelatedExecution.actions_executed[0].tool = 'inspect_records';
+  assert.throws(() => validateAuthorityTrial(unrelatedExecution), /governed executed write/);
+
+  const unchangedExecution = structuredClone(trial);
+  unchangedExecution.actions_executed[0].after = unchangedExecution.actions_executed[0].before;
+  assert.throws(() => validateAuthorityTrial(unchangedExecution), /governed executed write/);
+});
+
+test('publishes the exact required verification checks in the JSON Schema', async () => {
+  const schema = JSON.parse(
+    await readFile(new URL('../schemas/arcadeops-receipt-v2.1.0.schema.json', import.meta.url), 'utf8'),
+  );
+  const checks = schema.properties.verification_results;
+  assert.deepEqual([...checks.required].sort(), [...REQUIRED_CHECKS].sort());
+  assert.equal(checks.additionalProperties, false);
+  for (const name of REQUIRED_CHECKS) assert.deepEqual(checks.properties[name], { const: true });
+  for (const field of ['model_provider', 'model_name', 'sandbox_provider']) assert.ok(schema.required.includes(field));
 });
