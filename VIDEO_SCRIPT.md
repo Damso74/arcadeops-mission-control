@@ -1,83 +1,91 @@
 # Final demo video script
 
-Target: 1:50 to 2:05. The first 25 seconds must make the problem, product, and
-TrueForge fit obvious without requiring repository context.
+Target: 1:58 to 2:00. These timings match the verified 118.7-second natural
+narration track used by the reproducible renderer.
 
-## 0:00-0:10 - Hook
+## 0:00-0:12 - Hook
 
-**Visual:** Authority Ledger hero, then the copper approval boundary.
+**Visual:** ArcadeOps title card and bounded-authority thesis.
 
-**Narration:** “Would you trust an autonomous agent with production? You do not
-have to. ArcadeOps separates what an agent can do from what a human actually
-authorizes.”
+**Narration:** “An AI agent can roll back a broken service. The hard question is
+not whether it can act. It is who gets to say yes, what is allowed, and whether
+the result can be proved. This is ArcadeOps.”
 
-## 0:10-0:24 - One bounded mission
+## 0:12-0:25 - One bounded mission
 
 **Visual:** Executable Authority Contract beside the fictional incident.
 
 **Narration:** “Inside TrueForge, checkout API is degraded on version forty-two.
-The mission is narrow: inspect, verify, and, only if every gate passes, roll back
-to stable version forty-one. The server permits one write. Nothing broader.”
+The mission is narrow: investigate, verify, and, only if every gate passes, roll
+back to version forty-one. An executable Authority Contract permits exactly one
+write. Nothing broader.”
 
-## 0:24-0:40 - Independent Verifier
+## 0:25-0:43 - Independent Verifier
 
 **Visual:** TrueForge Verifier child and its two persisted MCP calls.
 
-**Narration:** “TrueForge creates a read-only Verifier. It independently inspects
-the incident and prepares the same rollback through real MCP tools. It can
-challenge the plan, but it never receives the write tool.”
+**Narration:** “The agent starts with a real MCP inspection: eighteen point four
+percent errors. Then TrueForge creates one read-only Verifier. It independently
+checks the incident and prepares the same rollback. It can challenge the plan,
+but it cannot touch the write tool.”
 
-## 0:40-0:56 - Daytona
+## 0:43-1:02 - Daytona
 
 **Visual:** Daytona sandbox execution and exact validation marker.
 
-**Narration:** “The agent then generates a fail-closed validator. Daytona runs it
-in isolation through the read-only MCP bridge. It checks the incident, target,
-threshold, and token. Without the exact pass result, the workflow stops.”
+**Narration:** “Next, the agent generates a fail-closed Python validator and runs
+it inside a Daytona sandbox. The code calls the MCP tools again and checks the
+incident, service, versions, threshold, and token. Without the exact Sandbox
+Validation Pass result, the workflow stops.”
 
-## 0:56-1:13 - Human authority
+## 1:02-1:21 - Human authority
 
 **Visual:** Native TrueForge approval checkpoint, held long enough to read the
 tool and target. Do not click on behalf of the reviewer.
 
-**Narration:** “Only then can the agent request execution. TrueForge pauses the
-governed write and shows the exact action to a human. Allow releases this single
-identity. Deny produces zero writes. Approval is explicit, state-bound, and not
-reusable.”
+**Narration:** “Only then does the agent request the rollback. TrueForge
+recognizes the irreversible tool call and pauses. The human sees the exact
+action and chooses Allow or Deny. No approval is inferred. No click is automated.
+Authority stays human.”
 
-## 1:13-1:27 - One write, fresh proof
+## 1:21-1:36 - One write, fresh proof
 
 **Visual:** Governed write, then postcondition `v41`, `healthy`, `0.7%`.
 
-**Narration:** “After Allow, exactly one rollback executes. A fresh MCP inspection
-proves version forty-one is healthy and the error rate fell from eighteen point
-four to zero point seven percent. Replay and concurrent writes still fail.”
+**Narration:** “After approval, exactly one rollback executes. A fresh inspection
+proves version forty-one is healthy and the error rate has fallen to zero point
+seven percent. Replay fails. Concurrent attempts still allow one write.
+Out-of-scope actions return Authority Denied.”
 
-## 1:27-1:43 - Authority Ledger
+## 1:36-1:43 - Authority Ledger
 
 **Visual:** Select the Human Allow event, show expected versus observed identity,
 then open the source records.
 
-**Narration:** “The public Authority Ledger reconstructs that persisted chain.
-Every event exposes the source records and correlation: Verifier, Daytona,
-human decision, one write, and recovery. Twenty-two checks must agree.”
+**Narration:** “Finally, the Evidence Console turns the persisted session into a
+receipt anyone can inspect.”
 
-## 1:43-1:55 - Break it
+## 1:43-1:47 - Portable evidence
+
+**Visual:** Evidence tab with the CLI and exact 22/22 check groups.
+
+**Narration:** “Twenty-two checks bind the MCP calls, Verifier, Daytona run,
+validation result, human decision, single write, and recovered service.”
+
+## 1:47-1:50 - Break it
 
 **Visual:** Challenge tab. Click `Duplicate the write`, then `Break call identity`.
 Show `MODIFIED RECEIPT REJECTED` and `0 displayed`.
 
-**Narration:** “Do not take our word for it. Duplicate the write or break its
-identity: the same validator rejects the copy and hides every success claim.
-Human Deny and out-of-scope refusal are also backed by a persisted TrueForge
-trial.”
+**Narration:** “Remove one proof and success disappears. Evidence, not trust.”
 
-## 1:55-2:02 - Close
+## 1:50-1:59 - Close
 
-**Visual:** Evidence tab with CLI command, then end card.
+**Visual:** ArcadeOps end card and complete five-step rail.
 
-**Narration:** “The agent proposes. The sandbox proves. You decide. ArcadeOps
-makes autonomous authority visible, enforceable, and independently verifiable.”
+**Narration:** “TrueForge supplies the harness. ArcadeOps makes authority
+enforceable. The agent does the work. The human keeps the decision. The receipt
+proves the outcome.”
 
 ## Recording checks
 

@@ -15,6 +15,7 @@ const browser = await chromium.launch({ headless: true });
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(consoleUrl, { waitUntil: 'networkidle' });
   await page.locator('#console-root[data-evidence-status="pass"]').waitFor();
   await page.locator('#workbench').evaluate(element => element.scrollIntoView({ block: 'start' }));
@@ -22,9 +23,11 @@ try {
 
   await page.getByRole('tab', { name: 'Challenge' }).click();
   await page.locator('[data-mutation="duplicate-write"]').click();
+  await page.waitForTimeout(50);
   await page.screenshot({ path: outputs.challenge });
 
   await page.getByRole('tab', { name: 'Evidence' }).click();
+  await page.waitForTimeout(50);
   await page.screenshot({ path: outputs.evidence });
   console.log(JSON.stringify(outputs, null, 2));
 } finally {

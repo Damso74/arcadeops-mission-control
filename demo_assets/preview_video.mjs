@@ -12,7 +12,7 @@ if (path.basename(narration) !== narration) {
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-  const fractions = [0.04, 0.15, 0.28, 0.44, 0.60, 0.75, 0.87, 0.97];
+  const fractions = [0.04, 0.15, 0.28, 0.44, 0.60, 0.75, 0.84, 0.88, 0.91, 0.97];
   for (let index = 0; index < fractions.length; index += 1) {
     const query = new URLSearchParams({ preview: String(fractions[index]), audio: narration });
     await page.goto(`${baseUrl}/demo_assets/video-final.html?${query}`, { waitUntil: "load" });
@@ -23,7 +23,7 @@ try {
     });
     console.log(`PREVIEW_${index + 1}=${fractions[index].toFixed(2)}`);
   }
-  console.log("PREVIEWS=8");
+  console.log(`PREVIEWS=${fractions.length}`);
 } finally {
   await browser.close();
 }

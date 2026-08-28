@@ -201,15 +201,15 @@ function drawLedgerScene(progress) {
   drawBrandHeader('PUBLIC AUTHORITY LEDGER');
   const phases = [
     { stop: 0, image: images[5], title: 'Inspect every persisted correlation.', pill: '1 IDENTITY · 1 WRITE' },
-    { stop: 0.42, image: images[6], title: 'Break the copy. Claims disappear.', pill: 'MODIFIED RECEIPT REJECTED' },
-    { stop: 0.74, image: images[7], title: 'Verify the chain independently.', pill: '22 / 22 · PORTABLE CLI' },
+    { stop: 0.55, image: images[7], title: 'Verify the chain independently.', pill: '22 / 22 · PORTABLE CLI' },
+    { stop: 0.80, image: images[6], title: 'Break the copy. Claims disappear.', pill: 'MODIFIED RECEIPT REJECTED' },
   ];
   const phaseIndex = progress >= phases[2].stop ? 2 : progress >= phases[1].stop ? 1 : 0;
   const phase = phases[phaseIndex];
   const nextStop = phases[phaseIndex + 1]?.stop ?? 1;
   const phaseProgress = clamp((progress - phase.stop) / (nextStop - phase.stop));
   text([phase.title], 66, 132, 30, ink, 680, 1.08, 'Georgia');
-  drawPill(phase.pill, phaseIndex === 1 ? 952 : 994, 108, phaseIndex === 1 ? '#ff7c74' : green);
+  drawPill(phase.pill, phaseIndex === 2 ? 952 : 994, 108, phaseIndex === 2 ? '#ff7c74' : green);
   drawScreenshot(phase.image, phaseProgress, 1);
   text(['REAL RECEIPT · SAME FAIL-CLOSED VALIDATOR'], 66, 686, 11, muted, 760);
 }
