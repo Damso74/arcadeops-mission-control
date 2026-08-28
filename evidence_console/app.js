@@ -1,356 +1,456 @@
-import { validateReceipt } from './receipt-validator.mjs';
+import {
+  REQUIRED_CHECKS,
+  validateAuthorityTrial,
+  validateReceipt,
+  validateReceiptReport,
+} from './receipt-validator.mjs';
 
-const receiptUrl = '../evidence/submission-evidence-receipt.json';
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const RECEIPT_URL = '../evidence/submission-evidence-receipt.json';
+const TRIAL_URL = '../evidence/go-pivot-evidence-receipt.json';
+const CLI_COMMAND = 'node bin/arcadeops.mjs verify evidence/submission-evidence-receipt.json';
 
+const root = document.querySelector('#console-root');
+const state = document.querySelector('#evidence-state');
+let sealedReceipt;
+
+const byId = id => document.getElementById(id);
 const setText = (id, value) => {
-  const element = document.getElementById(id);
-  if (element && value !== undefined && value !== null) element.textContent = String(value);
+  const element = byId(id);
+  if (element) element.textContent = String(value);
 };
+const formatTime = value => new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  timeZone: 'UTC',
+  hour12: false,
+}).format(new Date(value));
+const shortId = value => `${String(value).slice(0, 8)}…${String(value).slice(-5)}`;
+const clone = value => structuredClone(value);
 
-const first = value => Array.isArray(value) ? value[0] : value;
+const checkGroups = Object.freeze({
+  Authority: [
+    'native_approval_pause_for_write',
+    'human_allow_for_write',
+    'write_response_after_human_allow',
+    'authorized_rollback_executed_once',
+  ],
+  Execution: [
+    'daytona_provider_ready',
+    'daytona_sandbox_created',
+    'sandbox_exec_observed',
+    'sandbox_generated_code_uses_mcp_bridge',
+    'sandbox_validator_read_only',
+    'sandbox_validation_pass_observed',
+    'sandbox_validation_before_write',
+  ],
+  Verification: [
+    'exactly_one_verifier',
+    'verifier_used_real_mcp',
+    'verifier_never_attempted_write',
+    'precondition_inspection_observed',
+    'precondition_before_write',
+  ],
+  Recovery: [
+    'postcondition_inspection_observed',
+    'postcondition_after_write',
+    'service_recovered_on_target_version',
+    'submission_agent_resolved',
+    'all_turns_terminal',
+    'model_identity_resolved',
+  ],
+});
 
-function formatTime(value) {
-  if (!value) return '—';
-  return new Date(value).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZone: 'UTC',
+const humanize = value => value
+  .replaceAll('_', ' ')
+  .replace(/^./, character => character.toUpperCase());
+
+function setEvidenceState(status, label) {
+  root.dataset.evidenceStatus = status;
+  state.dataset.status = status;
+  state.lastElementChild.textContent = label;
+}
+
+function renderFailure(error) {
+  console.error(error);
+  setEvidenceState('fail', 'Receipt rejected');
+  setText('record-summary', 'The public Receipt did not pass the fail-closed validator. No operational result is displayed.');
+}
+
+function switchTab(name, focus = false) {
+  document.querySelectorAll('[data-tab]').forEach(button => {
+    const selected = button.dataset.tab === name;
+    button.setAttribute('aria-selected', String(selected));
+    if (selected && focus) button.focus();
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.hidden = panel.id !== `panel-${name}`;
   });
 }
 
-function humanizeCheck(name) {
-  return name.replaceAll('_', ' ').replace(/^./, character => character.toUpperCase());
+function installTabs() {
+  const tabs = [...document.querySelectorAll('[data-tab]')];
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    tab.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      event.preventDefault();
+      const offset = event.key === 'ArrowRight' ? 1 : -1;
+      const next = tabs[(index + offset + tabs.length) % tabs.length];
+      switchTab(next.dataset.tab, true);
+    });
+  });
+  byId('open-challenge').addEventListener('click', () => {
+    switchTab('challenge');
+    byId('workbench').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
-function checkGroup(name) {
-  if (/authority|approval|mission|token|write|replay/.test(name)) return 'Authority';
-  if (/sandbox|verifier|subagent|model|mcp/.test(name)) return 'Execution';
-  if (/precondition|postcondition|recover|rollback|service|state/.test(name)) return 'Recovery';
-  return 'Integrity';
+function buildEvents(receipt, evidence) {
+  const pre = receipt.precondition_inspections[0];
+  const verifier = receipt.subagent_events[0];
+  const verifierCalls = receipt.verifier_tool_calls;
+  const sandbox = receipt.sandbox_exec_calls.find(call => call.validation_pass_observed);
+  const approval = receipt.approval_requests[0];
+  const decision = receipt.human_decisions[0];
+  const write = receipt.executed_writes[0];
+  const post = receipt.postcondition_inspections.at(-1);
+  const callId = write.tool_call_id;
+
+  return [
+    {
+      kicker: 'Incident observed',
+      title: 'Production state inspected',
+      time: pre.responded_at,
+      state: 'READ ONLY',
+      description: 'The parent agent inspected the fictional incident before preparing any change.',
+      comparisons: [
+        ['Service state', 'degraded', pre.response.service.status],
+        ['Error rate', '> 2.0%', `${pre.response.service.error_rate_percent}%`],
+        ['Rollback target', receipt.target_version, pre.response.incident.rollback_target],
+      ],
+      summary: '1 inspection · 1 mission · 0 writes',
+      records: ['incident', 'service', 'mission'],
+      raw: pre,
+    },
+    {
+      kicker: 'Change prepared',
+      title: 'Target constrained to observed state',
+      time: receipt.started_at,
+      state: 'SCOPED',
+      description: 'The proposed rollback is bound to the incident, service, mission, and stable target observed before execution.',
+      comparisons: [
+        ['Observed version', write.response.before.deployed_version, pre.response.service.deployed_version],
+        ['Stable version', receipt.target_version, pre.response.service.stable_version],
+        ['Mission', receipt.mission_id, pre.mission_id],
+      ],
+      summary: '4 scope fields · 1 target · 0 ambiguity',
+      records: ['pre-state', 'target', 'mission'],
+      raw: { mission_id: receipt.mission_id, incident_id: receipt.incident_id, service_id: receipt.service_id, target_version: receipt.target_version, precondition: pre.response },
+    },
+    {
+      kicker: 'Independent verification',
+      title: 'Verifier challenged the proposal',
+      time: evidence.verifierRespondedAt,
+      state: 'VERIFIED',
+      description: 'A dynamic child agent made exactly two read-only MCP calls and never attempted the governed write.',
+      comparisons: [
+        ['Child identity', verifier.thread_id, verifierCalls[0].thread_id],
+        ['Required tools', 'inspect + prepare', verifierCalls.map(call => call.tool.replace('_rollback', '')).join(' + ')],
+        ['Write attempts', '0', String(verifierCalls.filter(call => call.tool === 'execute_rollback').length)],
+      ],
+      summary: '2 calls · 1 child identity · 0 writes',
+      records: ['subagent', 'inspect call', 'prepare call'],
+      raw: { subagent: verifier, tool_calls: verifierCalls },
+    },
+    {
+      kicker: 'Isolated execution',
+      title: 'Daytona validator passed',
+      time: sandbox.responded_at,
+      state: 'SANDBOXED',
+      description: 'Generated code ran inside Daytona and used the read-only MCP bridge to re-check the incident and rollback preparation.',
+      comparisons: [
+        ['Provider', 'daytona', receipt.sandbox_provider],
+        ['Direct calls', '2 read-only', `${sandbox.sandbox_command_evidence.direct_call_count} read-only`],
+        ['Validation', 'pass', sandbox.validation_pass_observed ? 'pass' : 'fail'],
+      ],
+      summary: '1 sandbox hash · 2 MCP reads · 0 write capability',
+      records: ['sandbox', 'command hash', 'validation'],
+      raw: { reference: receipt.sandbox_references[0], execution: sandbox },
+    },
+    {
+      kicker: 'Native checkpoint',
+      title: 'Write paused for approval',
+      time: approval.requested_at,
+      state: 'WAITING',
+      description: 'TrueForge emitted a persisted approval-required event before returning any write response.',
+      comparisons: [
+        ['Tool', 'execute_rollback', approval.tool],
+        ['Transport', 'governed MCP', `${approval.server} MCP`],
+        ['Call identity', shortId(callId), shortId(approval.tool_call_id)],
+      ],
+      summary: '1 approval event · 1 call identity · 0 response yet',
+      records: ['write attempt', 'approval event', 'call identity'],
+      raw: { write_attempt: receipt.write_calls[0], approval_request: approval },
+    },
+    {
+      kicker: 'Authority boundary',
+      title: 'Human Allow released one action',
+      time: decision.decided_at,
+      state: 'AUTHORIZED',
+      description: 'The native human decision and governed write share one persisted action identity. The permission is not reusable.',
+      comparisons: [
+        ['Decision actor', 'human via TrueForge UI', decision.actor.replaceAll('_', ' ')],
+        ['Decision', 'allow', decision.decision],
+        ['Call identity', shortId(callId), shortId(decision.tool_call_id)],
+      ],
+      summary: '4 records · 1 identity · 0 unmatched',
+      records: ['approval event', 'human decision', 'write call', 'write response'],
+      raw: { approval_request: approval, human_decision: decision, correlated_write: receipt.approval_correlated_writes[0] },
+    },
+    {
+      kicker: 'Governed execution',
+      title: 'Exactly one rollback executed',
+      time: write.responded_at,
+      state: '1 / 1 WRITE',
+      description: 'The authorized MCP action moved the fictional service from the degraded version to the pre-approved stable target.',
+      comparisons: [
+        ['Write budget', '1 maximum', `${receipt.executed_writes.length} executed`],
+        ['Target version', receipt.target_version, write.response.after.deployed_version],
+        ['Action applied', 'true', String(write.response.applied)],
+      ],
+      summary: '1 action id · 1 state change · budget exhausted',
+      records: ['authorization', 'MCP write', 'action result'],
+      raw: write,
+    },
+    {
+      kicker: 'Fresh recovery proof',
+      title: 'Postcondition independently observed',
+      time: post.responded_at,
+      state: 'RECOVERED',
+      description: 'A fresh inspection after the write confirmed the correlated action, target version, healthy state, and reduced error rate.',
+      comparisons: [
+        ['Deployed version', receipt.target_version, post.response.service.deployed_version],
+        ['Service state', 'healthy', post.response.service.status],
+        ['Error rate', '≤ 2.0%', `${post.response.service.error_rate_percent}%`],
+      ],
+      summary: '1 action id · 1 postcondition · 22/22 checks',
+      records: ['write response', 'postcondition', 'receipt checks'],
+      raw: { write_response: write.response, postcondition: post, verification_results: receipt.verification_results },
+    },
+  ];
 }
 
-function renderCheckGroups(checks) {
-  const container = document.getElementById('check-groups');
+function renderComparisons(rows) {
+  const container = byId('inspector-comparison');
   container.replaceChildren();
-  const groups = new Map([
-    ['Authority', []],
-    ['Execution', []],
-    ['Recovery', []],
-    ['Integrity', []],
-  ]);
+  rows.forEach(([label, expected, observed]) => {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    const expectedValue = document.createElement('dd');
+    const observedValue = document.createElement('dd');
+    const verdict = document.createElement('b');
+    dt.textContent = label;
+    const expectedLabel = document.createElement('small');
+    expectedLabel.textContent = 'Expected';
+    expectedValue.className = 'expected';
+    expectedValue.append(expectedLabel);
+    expectedValue.append(document.createTextNode(` ${expected}`));
+    const observedLabel = document.createElement('small');
+    observedLabel.textContent = 'Observed';
+    observedValue.className = 'observed';
+    observedValue.append(observedLabel);
+    observedValue.append(document.createTextNode(` ${observed}`));
+    verdict.textContent = 'MATCH';
+    row.append(dt, expectedValue, observedValue, verdict);
+    container.append(row);
+  });
+}
 
-  Object.keys(checks).forEach(name => groups.get(checkGroup(name)).push(name));
+function selectEvent(events, index) {
+  const event = events[index];
+  document.querySelectorAll('.event-item').forEach((row, rowIndex) => {
+    row.dataset.selected = String(rowIndex === index);
+    row.setAttribute('aria-current', rowIndex === index ? 'step' : 'false');
+  });
+  setText('inspector-index', String(index + 1).padStart(2, '0'));
+  setText('inspector-kicker', event.kicker);
+  setText('inspector-title', event.title);
+  setText('inspector-verdict', 'MATCH');
+  setText('inspector-description', event.description);
+  setText('correlation-summary', event.summary);
+  renderComparisons(event.comparisons);
+  const records = byId('correlation-records');
+  records.replaceChildren(...event.records.map(label => {
+    const span = document.createElement('span');
+    span.textContent = label;
+    return span;
+  }));
+  setText('raw-proof-json', JSON.stringify(event.raw, null, 2));
+}
 
-  groups.forEach((names, groupName) => {
-    if (!names.length) return;
-    const details = document.createElement('details');
-    details.className = 'check-group';
+function renderEvents(events) {
+  const ledger = byId('event-ledger');
+  ledger.replaceChildren();
+  events.forEach((event, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'event-item';
+    button.setAttribute('aria-label', `${String(index + 1).padStart(2, '0')}. ${event.title}. ${event.state}`);
+    const number = document.createElement('span');
+    const copy = document.createElement('span');
+    const kicker = document.createElement('small');
+    const title = document.createElement('strong');
+    const meta = document.createElement('span');
+    const status = document.createElement('b');
+    number.className = 'event-index';
+    number.textContent = String(index + 1).padStart(2, '0');
+    copy.className = 'event-copy';
+    kicker.textContent = event.kicker;
+    title.textContent = event.title;
+    meta.className = 'event-time';
+    meta.append(document.createTextNode(`${formatTime(event.time)} UTC`));
+    status.className = `event-state${event.state === 'AUTHORIZED' || event.state === 'WAITING' ? ' authority' : ''}`;
+    status.textContent = event.state;
+    copy.append(kicker, title);
+    meta.append(status);
+    button.append(number, copy, meta);
+    button.addEventListener('click', () => selectEvent(events, index));
+    ledger.append(button);
+  });
+  selectEvent(events, 5);
+}
+
+function renderChecks(checks) {
+  setText('receipt-check-count', Object.values(checks).filter(Boolean).length);
+  setText('receipt-check-total', REQUIRED_CHECKS.length);
+  setText('ledger-verdict-detail', `${REQUIRED_CHECKS.length} correlated checks`);
+  const container = byId('check-groups');
+  container.replaceChildren();
+  Object.entries(checkGroups).forEach(([group, names]) => {
+    const section = document.createElement('details');
     const summary = document.createElement('summary');
-    const label = document.createElement('strong');
-    label.textContent = groupName;
-    const count = document.createElement('span');
-    count.textContent = `${names.length}/${names.length}`;
-    summary.append(label, count);
-
+    const total = document.createElement('span');
     const list = document.createElement('ul');
+    section.className = 'check-group';
+    section.open = true;
+    summary.append(document.createTextNode(group));
+    total.textContent = `${names.filter(name => checks[name] === true).length}/${names.length}`;
+    summary.append(total);
+    section.append(summary);
     names.forEach(name => {
       const item = document.createElement('li');
-      item.textContent = humanizeCheck(name);
+      item.textContent = humanize(name);
       list.append(item);
     });
-
-    details.append(summary, list);
-    container.append(details);
+    section.append(list);
+    container.append(section);
   });
 }
 
-const replaySteps = [
-  {
-    node: 0,
-    state: 'incident',
-    title: 'Incident detected',
-    detail: 'Validated incident context loaded from the receipt.',
-    status: 'Incident observed',
-  },
-  {
-    node: 0,
-    state: 'prepared',
-    title: 'Rollback prepared',
-    detail: 'The agent proposes a scoped recovery plan using read-only MCP calls.',
-    status: 'Agent prepared change',
-  },
-  {
-    node: 1,
-    state: 'validated',
-    title: 'Sandbox validation passed',
-    detail: 'Daytona runs the generated checks in isolation before authority is requested.',
-    status: 'Daytona validation passed',
-  },
-  {
-    node: 2,
-    state: 'waiting',
-    title: 'Waiting for human approval',
-    detail: 'The validated write is paused at the authority boundary.',
-    status: 'Approval required',
-    delay: 1850,
-  },
-  {
-    node: 2,
-    state: 'approved',
-    title: 'Human Allow recorded',
-    detail: 'The operator unlocks one exact rollback. No broader permission is granted.',
-    status: 'Human authorized one write',
-  },
-  {
-    node: 3,
-    state: 'executed',
-    title: 'One authorized write executed',
-    detail: 'The governed MCP operation runs once, inside the approved scope.',
-    status: 'Write executed 1 / 1',
-  },
-  {
-    node: 4,
-    state: 'sealed',
-    title: 'Recovery proven and receipt sealed',
-    detail: 'The service is healthy and every link in the authority chain is verifiable.',
-    status: 'Mission verified',
-  },
-];
-
-let currentStep = -1;
-let replayTimer;
-let isPlaying = false;
-
-function setReplayButton(label) {
-  const button = document.getElementById('replay-control');
-  button.querySelector('span').textContent = label;
-}
-
-function updateProgress(node, isComplete = false) {
-  const percent = isComplete ? 100 : Math.max(0, (node / 4) * 100);
-  const progress = document.getElementById('path-progress');
-  progress.style.width = `${percent}%`;
-  progress.style.height = `${percent}%`;
-}
-
-function renderReadyState() {
-  currentStep = -1;
-  document.querySelector('.mission-canvas').dataset.replayState = 'ready';
-  document.querySelectorAll('.path-node').forEach(node => {
-    node.classList.remove('is-active', 'is-complete');
-    node.removeAttribute('aria-current');
-  });
-  document.getElementById('incident-card').classList.remove('is-visible');
-  document.getElementById('gate-card').classList.remove('is-active', 'is-approved');
-  document.getElementById('outcome-strip').classList.remove('is-visible');
-  setText('human-node-state', 'Required');
-  setText('gate-label', 'Human approval gate');
-  setText('gate-title', 'Write permission locked');
-  setText('gate-detail', 'No agent can cross this boundary alone.');
-  setText('step-index', '00');
-  setText('step-title', 'Evidence verified');
-  setText('step-detail', 'Replay the persisted mission to inspect each control.');
-  setText('replay-status-text', 'Ready to replay');
-  document.getElementById('replay-status').dataset.state = 'ready';
-  document.getElementById('step-control').disabled = false;
-  setReplayButton('Replay verified mission');
-  updateProgress(0);
-}
-
-function renderReplayStep(index) {
-  currentStep = Math.max(0, Math.min(index, replaySteps.length - 1));
-  const step = replaySteps[currentStep];
-  const nodes = [...document.querySelectorAll('.path-node')];
-  const isSealed = step.state === 'sealed';
-
-  document.querySelector('.mission-canvas').dataset.replayState = step.state;
-  document.getElementById('incident-card').classList.add('is-visible');
-
-  nodes.forEach((node, nodeIndex) => {
-    const complete = nodeIndex < step.node || (isSealed && nodeIndex === step.node) || (step.state === 'executed' && nodeIndex === 2);
-    const active = nodeIndex === step.node && !isSealed;
-    node.classList.toggle('is-complete', complete);
-    node.classList.toggle('is-active', active);
-    if (active) node.setAttribute('aria-current', 'step');
-    else node.removeAttribute('aria-current');
-  });
-
-  const gate = document.getElementById('gate-card');
-  const approved = ['approved', 'executed', 'sealed'].includes(step.state);
-  gate.classList.toggle('is-active', step.state === 'waiting');
-  gate.classList.toggle('is-approved', approved);
-  document.getElementById('outcome-strip').classList.toggle('is-visible', isSealed);
-
-  if (step.state === 'waiting') {
-    setText('human-node-state', 'Waiting');
-    setText('gate-label', 'Human approval required');
-    setText('gate-title', 'Execution paused');
-    setText('gate-detail', 'The sandbox passed. The agent still has no write authority.');
-  } else if (approved) {
-    setText('human-node-state', 'Allowed');
-    setText('gate-label', 'Human approval recorded');
-    setText('gate-title', 'Exactly one write unlocked');
-    setText('gate-detail', 'The decision and write share one correlated identity.');
-  } else {
-    setText('human-node-state', 'Required');
-    setText('gate-label', 'Human approval gate');
-    setText('gate-title', 'Write permission locked');
-    setText('gate-detail', 'No agent can cross this boundary alone.');
-  }
-
-  setText('step-index', String(currentStep + 1).padStart(2, '0'));
-  setText('step-title', step.title);
-  setText('step-detail', step.detail);
-  setText('replay-status-text', step.status);
-  updateProgress(step.node, isSealed);
-
-  const stepButton = document.getElementById('step-control');
-  stepButton.disabled = isSealed;
-  stepButton.firstChild.textContent = isSealed ? 'Replay complete ' : 'Next step ';
-
-  if (isSealed) {
-    isPlaying = false;
-    document.getElementById('replay-status').dataset.state = 'complete';
-    setReplayButton('Replay again');
-  } else {
-    document.getElementById('replay-status').dataset.state = isPlaying ? 'running' : 'paused';
-  }
-}
-
-function stopReplay() {
-  window.clearTimeout(replayTimer);
-  isPlaying = false;
-  if (currentStep >= 0 && currentStep < replaySteps.length - 1) {
-    document.getElementById('replay-status').dataset.state = 'paused';
-    setText('replay-status-text', 'Replay paused');
-    setReplayButton('Continue replay');
-  }
-}
-
-function scheduleNextStep() {
-  if (!isPlaying) return;
-  const nextIndex = currentStep + 1;
-  if (nextIndex >= replaySteps.length) {
-    stopReplay();
-    return;
-  }
-  renderReplayStep(nextIndex);
-  if (nextIndex < replaySteps.length - 1) {
-    const stepDelay = reducedMotion.matches ? 320 : (replaySteps[nextIndex].delay || 1150);
-    replayTimer = window.setTimeout(scheduleNextStep, stepDelay);
-  }
-}
-
-function playReplay() {
-  if (isPlaying) {
-    stopReplay();
-    return;
-  }
-  if (currentStep >= replaySteps.length - 1) renderReadyState();
-  isPlaying = true;
-  setReplayButton('Pause replay');
-  document.getElementById('replay-status').dataset.state = 'running';
-  document.getElementById('mission-replay').scrollIntoView({
-    behavior: reducedMotion.matches ? 'auto' : 'smooth',
-    block: 'start',
-  });
-  replayTimer = window.setTimeout(scheduleNextStep, reducedMotion.matches ? 50 : 520);
-}
-
-function bindReplayControls() {
-  document.getElementById('replay-control').addEventListener('click', playReplay);
-  document.getElementById('step-control').addEventListener('click', () => {
-    stopReplay();
-    if (currentStep >= replaySteps.length - 1) renderReadyState();
-    else renderReplayStep(currentStep + 1);
-  });
-  document.getElementById('restart-control').addEventListener('click', () => {
-    stopReplay();
-    renderReadyState();
-  });
-  renderReadyState();
-}
-
-function renderReceipt(receipt) {
-  const evidence = validateReceipt(receipt);
-  const serviceBefore = evidence.precondition.service;
-  const service = evidence.postcondition.service;
-  const write = evidence.write;
-  const checks = evidence.checks;
-  const checkCount = Object.keys(checks).length;
-  const inspections = Array.isArray(receipt.precondition_inspections) ? receipt.precondition_inspections : [receipt.precondition_inspections];
-  const parentInspection = inspections.find(item => item.thread_id === 'main') || first(receipt.precondition_inspections);
-  const sandboxCalls = Array.isArray(receipt.sandbox_exec_calls) ? receipt.sandbox_exec_calls : [receipt.sandbox_exec_calls];
-  const sandboxValidation = sandboxCalls.find(item => item.validation_pass_observed);
-  const decision = first(receipt.human_decisions);
-
-  replaySteps[0].detail = `${receipt.service_id} is degraded on ${serviceBefore.deployed_version} at ${serviceBefore.error_rate_percent}% errors.`;
-  replaySteps[1].detail = `The agent proposes a scoped rollback to ${receipt.target_version} using read-only MCP calls.`;
-
-  setText('page-title', 'Agents can prepare. Humans authorize.');
-  setText('record-summary', `ArcadeOps validated a rollback for ${receipt.service_id} in Daytona, paused at human approval, executed exactly once, and sealed ${checkCount} verification checks.`);
-  setText('service-name', receipt.service_id);
-  setText('incident-name', receipt.incident_id);
+function renderSummary(receipt, evidence) {
+  const before = evidence.write.response.before;
+  const after = evidence.write.response.after;
+  setText('record-summary', `One persisted TrueForge mission correlates a Verifier, Daytona validation, native human approval, one governed write, and fresh recovery proof.`);
+  setText('summary-service', receipt.service_id);
+  setText('summary-version-before', before.deployed_version);
+  setText('summary-version-after', after.deployed_version);
+  setText('summary-rate-before', `${before.error_rate_percent}%`);
+  setText('summary-rate-after', `${after.error_rate_percent}%`);
+  setText('incident-id', receipt.incident_id);
   setText('mission-id', receipt.mission_id);
-  setText('incident-service', `${receipt.service_id} degraded`);
-  setText('outcome-service', `${receipt.service_id} healthy`);
-  setText('incident-rate', `${serviceBefore.error_rate_percent}%`);
-  setText('from-version', serviceBefore.deployed_version);
-  setText('to-version', service.deployed_version);
-  setText('before-rate', `${serviceBefore.error_rate_percent}%`);
-  setText('after-rate', `${service.error_rate_percent}%`);
-  setText('authority-change', `${serviceBefore.deployed_version} → ${receipt.target_version}`);
-  setText('incident-time', `${formatTime(parentInspection?.responded_at)} UTC`);
-  setText('verifier-time', formatTime(evidence.verifierRespondedAt));
-  setText('sandbox-time', formatTime(sandboxValidation?.responded_at));
-  setText('approval-time', formatTime(decision?.decided_at));
-  setText('receipt-check-count', checkCount);
-  setText('receipt-check-total', checkCount);
-  setText('node-check-count', `${checkCount} / ${checkCount}`);
-  setText('proof-summary', `${checkCount}/${checkCount}`);
-  setText('receipt-date', receipt.generated_at.slice(0, 10));
-  setText('model-name', `${receipt.model_provider}/${receipt.model_name}`);
-  setText('sandbox-name', `${receipt.sandbox_provider} / isolated`);
-  setText('decision-time', `Human Allow / ${formatTime(decision?.decided_at)} UTC`);
+}
 
-  const sessionLink = document.getElementById('session-link');
-  const isLocalRuntime = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
-  if (isLocalRuntime) {
-    sessionLink.href = `http://127.0.0.1:8791/sessions/${encodeURIComponent(receipt.session_id)}`;
-    sessionLink.textContent = 'Open TrueForge session';
-  } else {
-    sessionLink.href = 'https://github.com/Damso74/arcadeops-mission-control#evidence-status';
-    sessionLink.textContent = 'Inspect public evidence';
+const mutations = Object.freeze({
+  'remove-approval': receipt => { receipt.human_decisions = []; },
+  'duplicate-write': receipt => { receipt.executed_writes.push(clone(receipt.executed_writes[0])); },
+  'change-target': receipt => { receipt.target_version = 'v40'; },
+  'replace-sandbox': receipt => { receipt.sandbox_provider = 'local'; },
+  'reorder-events': receipt => {
+    const validator = receipt.sandbox_exec_calls.find(call => call.validation_pass_observed);
+    validator.responded_at = new Date(Date.parse(receipt.executed_writes[0].responded_at) + 1000).toISOString();
+  },
+  'break-identity': receipt => { receipt.human_decisions[0].tool_call_id = 'tampered-call-id'; },
+});
+
+function resetChallenge() {
+  document.querySelectorAll('[data-mutation]').forEach(button => button.setAttribute('aria-pressed', 'false'));
+  byId('challenge-result').dataset.result = 'ready';
+  setText('challenge-label', 'SEALED RECEIPT READY');
+  setText('challenge-code', 'Select an attack');
+  setText('challenge-message', `The canonical Receipt currently verifies all ${REQUIRED_CHECKS.length} invariants.`);
+  setText('challenge-claims', `${REQUIRED_CHECKS.length} verified`);
+  setText('challenge-writes', '1 / 1');
+  byId('restore-receipt').disabled = true;
+}
+
+function installChallenge() {
+  document.querySelectorAll('[data-mutation]').forEach(button => {
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => {
+      const candidate = clone(sealedReceipt);
+      mutations[button.dataset.mutation](candidate);
+      const report = validateReceiptReport(candidate);
+      document.querySelectorAll('[data-mutation]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      byId('challenge-result').dataset.result = report.valid ? 'warning' : 'rejected';
+      setText('challenge-label', report.valid ? 'MUTATION WAS NOT REJECTED' : 'MODIFIED RECEIPT REJECTED');
+      setText('challenge-code', report.code);
+      setText('challenge-message', report.message);
+      setText('challenge-claims', report.valid ? 'review required' : '0 displayed');
+      setText('challenge-writes', report.valid ? 'not trusted' : '0 authorized');
+      byId('restore-receipt').disabled = false;
+    });
+  });
+  byId('restore-receipt').addEventListener('click', resetChallenge);
+}
+
+async function loadTrial() {
+  const historicalCards = [...document.querySelectorAll('.trial-card')].slice(1);
+  historicalCards.forEach(card => { card.hidden = true; });
+  try {
+    const response = await fetch(TRIAL_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Trial HTTP ${response.status}`);
+    const trial = await response.json();
+    const evidence = validateAuthorityTrial(trial);
+    historicalCards.forEach(card => { card.hidden = false; });
+    setText('trial-disclosure', `Verified historical TrueForge acceptance session ${shortId(trial.session_id)}: ${evidence.humanBlock.state_changed ? 'unexpected write' : 'Human Deny preserved state'}; AuthorityContract refusal preserved state. This earlier trial did not use Daytona or a subagent.`);
+  } catch (error) {
+    console.error(error);
+    setText('trial-disclosure', 'Historical negative trials were not displayed because their receipt could not be independently validated.');
   }
-
-  renderCheckGroups(checks);
-
-  const state = document.getElementById('evidence-state');
-  state.dataset.status = 'pass';
-  state.lastElementChild.textContent = 'Receipt verified';
-  document.getElementById('console-root').dataset.evidenceStatus = 'pass';
-  bindReplayControls();
 }
 
-function renderFailure() {
-  stopReplay();
-  const root = document.getElementById('console-root');
-  root.dataset.evidenceStatus = 'fail';
-  const state = document.getElementById('evidence-state');
-  state.dataset.status = 'fail';
-  state.lastElementChild.textContent = 'Receipt unavailable';
-  document.querySelector('.eyebrow').lastChild.textContent = ' Evidence unavailable';
-  setText('page-title', 'No result displayed');
-  setText('record-summary', 'The receipt could not prove the complete authority chain. ArcadeOps fails closed and hides every operational success claim.');
+function installCopy() {
+  byId('copy-command').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(CLI_COMMAND);
+      button.textContent = 'Copied';
+    } catch {
+      button.textContent = 'Select command';
+    }
+    window.setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+  });
 }
 
-fetch(receiptUrl, { cache: 'no-store' })
-  .then(response => {
-    if (!response.ok) throw new Error(`Receipt request failed with ${response.status}`);
-    return response.json();
-  })
-  .then(renderReceipt)
-  .catch(renderFailure);
+async function start() {
+  installTabs();
+  installChallenge();
+  installCopy();
+  try {
+    const response = await fetch(RECEIPT_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Receipt HTTP ${response.status}`);
+    const receipt = await response.json();
+    const evidence = validateReceipt(receipt);
+    sealedReceipt = receipt;
+    renderSummary(receipt, evidence);
+    renderEvents(buildEvents(receipt, evidence));
+    renderChecks(evidence.checks);
+    setEvidenceState('pass', `${REQUIRED_CHECKS.length}/${REQUIRED_CHECKS.length} Receipt valid`);
+    await loadTrial();
+  } catch (error) {
+    renderFailure(error);
+  }
+}
+
+start();

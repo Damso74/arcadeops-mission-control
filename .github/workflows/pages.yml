@@ -28,16 +28,18 @@ jobs:
           node-version: "24"
 
       - name: Verify the published Evidence Receipt
-        run: node --test evidence_console/test_receipt_validator.mjs
+        run: node --test evidence_console/test_receipt_validator.mjs evidence_console/test_arcadeops_cli.mjs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Build minimal public site
         run: |
-          mkdir -p _site/evidence
+          mkdir -p _site/evidence _site/schemas
           cp -R evidence_console _site/evidence_console
           cp evidence/submission-evidence-receipt.json _site/evidence/
+          cp evidence/go-pivot-evidence-receipt.json _site/evidence/
+          cp schemas/arcadeops-receipt-v2.1.0.schema.json _site/schemas/
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

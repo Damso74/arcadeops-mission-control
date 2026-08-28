@@ -10,33 +10,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-
-# Markup values the application must derive from the validated receipt. Keeping
-# them out of the static HTML prevents a stale operational claim from surviving
-# a failed or replaced receipt.
 RECEIPT_DERIVED_IDS = (
+    "summary-service",
+    "summary-version-before",
+    "summary-version-after",
+    "summary-rate-before",
+    "summary-rate-after",
+    "incident-id",
     "mission-id",
-    "incident-time",
-    "incident-rate",
-    "node-check-count",
-    "authority-change",
-    "from-version",
-    "to-version",
-    "before-rate",
-    "after-rate",
-    "verifier-time",
-    "sandbox-time",
-    "approval-time",
     "receipt-check-count",
     "receipt-check-total",
-    "proof-summary",
-    "receipt-date",
 )
 
 
 class IdCollector(HTMLParser):
-    """Collects element ids and, for the receipt-derived ones, their static text."""
-
     def __init__(self, tracked: tuple[str, ...] = ()) -> None:
         super().__init__()
         self.ids: set[str] = set()
@@ -56,11 +43,6 @@ class IdCollector(HTMLParser):
             self._depth = 0
             self.text[element_id] = ""
 
-    def handle_startendtag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        for name, value in attrs:
-            if name == "id" and value:
-                self.ids.add(value)
-
     def handle_endtag(self, _tag: str) -> None:
         if self._current is None:
             return
@@ -75,54 +57,45 @@ class IdCollector(HTMLParser):
 
 
 class EvidenceConsoleTests(unittest.TestCase):
-    def test_console_binds_only_to_a_passing_public_receipt(self) -> None:
+    def test_console_binds_only_to_passing_public_receipts(self) -> None:
         receipt = json.loads((ROOT / "evidence" / "submission-evidence-receipt.json").read_text(encoding="utf-8"))
+        trial = json.loads((ROOT / "evidence" / "go-pivot-evidence-receipt.json").read_text(encoding="utf-8"))
         self.assertEqual(receipt["final_status"], "SUBMISSION_ACCEPTANCE_PASS")
         self.assertTrue(all(receipt["verification_results"].values()))
         self.assertEqual(len(receipt["approval_correlated_writes"]), 1)
-        self.assertTrue(receipt["precondition_inspections"])
-        self.assertTrue(receipt["postcondition_inspections"])
+        self.assertEqual(trial["final_status"], "GO_PIVOT_ACCEPTANCE_PASS")
+        self.assertEqual([item["decision"] for item in trial["human_decisions"]], ["deny", "allow"])
 
-    def test_console_has_one_clear_surface_and_fail_closed_copy(self) -> None:
+    def test_authority_ledger_is_clear_interactive_and_fail_closed(self) -> None:
         html = (ROOT / "evidence_console" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "evidence_console" / "app.js").read_text(encoding="utf-8")
         parser = IdCollector()
         parser.feed(html)
         required_ids = {
             "console-root",
-            "page-title",
-            "evidence-state",
-            "mission-replay",
-            "replay-control",
-            "step-control",
-            "gate-card",
-            "outcome-strip",
+            "workbench",
+            "event-ledger",
+            "inspector-comparison",
+            "mutation-list",
+            "challenge-result",
             "check-groups",
-            "session-link",
+            "trial-disclosure",
         }
         self.assertTrue(required_ids.issubset(parser.ids))
-        self.assertEqual(html.count("<h1"), 1)
-        self.assertIn("Evidence unavailable", script)
-        self.assertIn("https://github.com/Damso74/arcadeops-mission-control#evidence-status", script)
-        self.assertIn("Open TrueForge session", script)
-        self.assertIn("Inspect public evidence", script)
-        self.assertIn("Agents can prepare. Humans authorize.", script)
-        self.assertIn("paused at human approval", script)
-        self.assertIn("Receipt verified", script)
-        self.assertIn("Waiting for human approval", script)
-        self.assertIn("Exactly one write unlocked", script)
-        self.assertIn("receipt.service_id", script)
-        self.assertIn("serviceBefore.deployed_version", script)
-        self.assertNotIn("checkout service is degraded", script)
-        self.assertNotIn("after a deployment", script)
-        self.assertIn("Deterministic replay from persisted evidence", html)
-        self.assertIn('aria-live="polite"', html)
+        self.assertIn("Would you trust an agent with production?", html)
+        self.assertIn("Break a copy. Watch the real validator refuse it.", html)
+        self.assertEqual(html.count('data-mutation="'), 6)
+        self.assertIn("browser-local integrity test", html)
+        self.assertIn("validateReceipt(receipt)", script)
+        self.assertIn("validateReceiptReport(candidate)", script)
+        self.assertIn("validateAuthorityTrial(trial)", script)
+        self.assertIn("renderFailure(error)", script)
+        self.assertIn("0 displayed", script)
         self.assertNotIn("innerHTML", script)
         self.assertIn('data-evidence-status="loading"', html)
-        self.assertNotIn("Agents can prepare. Humans authorize.", html)
         self.assertNotIn("SUBMISSION_ACCEPTANCE_PASS", html)
 
-    def test_markup_carries_no_hardcoded_operational_values(self) -> None:
+    def test_markup_carries_no_hardcoded_receipt_identity_or_metrics(self) -> None:
         html = (ROOT / "evidence_console" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "evidence_console" / "app.js").read_text(encoding="utf-8")
         parser = IdCollector(RECEIPT_DERIVED_IDS)
@@ -132,13 +105,10 @@ class EvidenceConsoleTests(unittest.TestCase):
             self.assertIn(element_id, parser.text, f"missing element #{element_id}")
             placeholder = parser.text[element_id].strip()
             self.assertTrue(placeholder, f"#{element_id} must keep a visible placeholder")
-            self.assertIsNone(
-                re.search(r"\d", placeholder),
-                f"#{element_id} must not hardcode the operational value {placeholder!r}",
-            )
-            self.assertIn(f"setText('{element_id}'", script, f"#{element_id} is never filled from the receipt")
+            self.assertIsNone(re.search(r"\d", placeholder), f"#{element_id} hardcodes {placeholder!r}")
+            self.assertIn(f"setText('{element_id}'", script, f"#{element_id} is never receipt-derived")
 
-        for stale in ("18.4%", "0.7%", "v42", "v41", "22 / 22", "22/22", "TF-SAFE-ROLLBACK-001", "2026-08-25"):
+        for stale in ("18.4%", "0.7%", "v42", "v41", "TF-SAFE-ROLLBACK-001", "2026-08-25"):
             self.assertNotIn(stale, html, f"static markup must not restate {stale}")
 
     def test_small_label_contrast_meets_wcag_aa(self) -> None:
@@ -159,12 +129,17 @@ class EvidenceConsoleTests(unittest.TestCase):
             return (values[0] + 0.05) / (values[1] + 0.05)
 
         subtle = token("subtle")
-        for surface in ("page", "surface", "surface-raised", "surface-soft"):
+        for surface in ("page", "surface", "surface-2", "surface-3"):
             self.assertGreaterEqual(contrast(subtle, token(surface)), 4.5, surface)
 
-    def test_receipt_validator_rejects_incomplete_or_uncorrelated_evidence(self) -> None:
+    def test_receipt_validator_and_cli_reject_adversarial_evidence(self) -> None:
         result = subprocess.run(
-            ["node", "--test", str(ROOT / "evidence_console" / "test_receipt_validator.mjs")],
+            [
+                "node",
+                "--test",
+                str(ROOT / "evidence_console" / "test_receipt_validator.mjs"),
+                str(ROOT / "evidence_console" / "test_arcadeops_cli.mjs"),
+            ],
             cwd=ROOT,
             check=False,
             capture_output=True,

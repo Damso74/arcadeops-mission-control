@@ -23,8 +23,30 @@ export const REQUIRED_CHECKS = Object.freeze([
   'model_identity_resolved',
 ]);
 
+const ERROR_RULES = Object.freeze([
+  [/human decision|human Allow/i, 'HUMAN_DECISION_INVALID'],
+  [/approval.*correlat|not correlated|approval event identity/i, 'APPROVAL_CORRELATION_BROKEN'],
+  [/timestamp|predates|does not follow|before the write|before write/i, 'EVENT_ORDER_INVALID'],
+  [/sandbox/i, 'SANDBOX_EVIDENCE_INVALID'],
+  [/Verifier/i, 'VERIFIER_EVIDENCE_INVALID'],
+  [/postcondition|recovery/i, 'RECOVERY_EVIDENCE_INVALID'],
+  [/precondition|rollback target|target version/i, 'AUTHORITY_SCOPE_INVALID'],
+  [/write.*exactly one|executed write|write attempt/i, 'WRITE_BUDGET_INVALID'],
+  [/verification_results|required check/i, 'CHECK_SET_INVALID'],
+]);
+
+const errorCode = message => ERROR_RULES.find(([pattern]) => pattern.test(message))?.[1] || 'RECEIPT_INVALID';
+
+export class ReceiptValidationError extends Error {
+  constructor(message) {
+    super(`Receipt rejected: ${message}`);
+    this.name = 'ReceiptValidationError';
+    this.code = errorCode(message);
+  }
+}
+
 const fail = message => {
-  throw new Error(`Receipt rejected: ${message}`);
+  throw new ReceiptValidationError(message);
 };
 
 const requireThat = (condition, message) => {
@@ -286,4 +308,45 @@ export function validateReceipt(receipt) {
     decision,
     verifierRespondedAt: new Date(Math.max(...verifierResponseTimes)).toISOString(),
   };
+}
+
+export function validateReceiptReport(receipt) {
+  try {
+    const evidence = validateReceipt(receipt);
+    return { valid: true, code: 'RECEIPT_VERIFIED', message: 'The complete authority chain is valid.', evidence };
+  } catch (error) {
+    if (!(error instanceof ReceiptValidationError)) throw error;
+    return { valid: false, code: error.code, message: error.message.replace(/^Receipt rejected:\s*/, '') };
+  }
+}
+
+export function validateAuthorityTrial(receipt) {
+  requireThat(isRecord(receipt), 'trial root value must be an object');
+  requireThat(receipt.schema_version === '1.0.0', 'trial schema_version is unsupported');
+  requireThat(receipt.receipt_kind === 'trueforge-go-pivot-acceptance', 'trial receipt_kind is unexpected');
+  requireThat(receipt.final_status === 'GO_PIVOT_ACCEPTANCE_PASS', 'trial final status is not passing');
+  requireThat(isNonEmptyString(receipt.mission_id) && isNonEmptyString(receipt.session_id), 'trial mission identity is missing');
+  requireThat(Array.isArray(receipt.approval_requests) && receipt.approval_requests.length === 2, 'trial requires two native approval requests');
+  requireThat(Array.isArray(receipt.human_decisions) && receipt.human_decisions.length === 2, 'trial requires one Deny and one Allow');
+  requireThat(Array.isArray(receipt.actions_executed) && receipt.actions_executed.length === 1, 'trial requires exactly one executed write');
+  requireThat(Array.isArray(receipt.actions_blocked) && receipt.actions_blocked.length === 2, 'trial requires two blocked actions');
+
+  const deny = receipt.human_decisions.find(decision => decision.decision === 'deny');
+  const allow = receipt.human_decisions.find(decision => decision.decision === 'allow');
+  requireThat(deny?.actor === 'human_via_trueforge_ui', 'trial human Deny is missing');
+  requireThat(allow?.actor === 'human_via_trueforge_ui', 'trial human Allow is missing');
+
+  const humanBlock = receipt.actions_blocked.find(action => action.authority === 'human_approval_gate');
+  const contractBlock = receipt.actions_blocked.find(action => action.authority === 'AuthorityContract');
+  const executed = receipt.actions_executed[0];
+  requireThat(humanBlock?.tool_call_id === deny.tool_call_id && humanBlock?.state_changed === false, 'trial Deny is not correlated to a no-write result');
+  requireThat(executed?.tool_call_id === allow.tool_call_id, 'trial Allow is not correlated to the executed write');
+  requireThat(contractBlock?.state_changed === false && /AUTHORITY_DENIED/.test(contractBlock?.reason || ''), 'trial contract refusal is missing');
+  requireThat(receipt.sandbox_provider === null && receipt.subagent_events?.length === 0, 'trial overstates unavailable sandbox or subagent evidence');
+
+  const checks = receipt.verification_results;
+  requireThat(isRecord(checks) && Object.values(checks).every(value => value === true), 'trial verification results are incomplete');
+  requireThat(checks.human_deny_observed && checks.human_allow_observed && checks.authority_denial_observed, 'trial authority outcomes are incomplete');
+
+  return { deny, allow, executed, humanBlock, contractBlock, checks };
 }

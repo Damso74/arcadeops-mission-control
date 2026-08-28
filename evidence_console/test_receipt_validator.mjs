@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { REQUIRED_CHECKS, validateReceipt } from './receipt-validator.mjs';
+import {
+  REQUIRED_CHECKS,
+  validateAuthorityTrial,
+  validateReceipt,
+  validateReceiptReport,
+} from './receipt-validator.mjs';
 
 const sourceReceipt = JSON.parse(
   await readFile(new URL('../evidence/submission-evidence-receipt.json', import.meta.url), 'utf8'),
@@ -90,4 +95,28 @@ test('rejects missing or reordered authority timestamps', () => {
   rejects(receipt => { receipt.human_decisions[0].decided_at = 'not-a-date'; }, /timestamp is invalid/);
   rejects(receipt => { receipt.human_decisions[0].decided_at = '2026-08-25T09:00:00Z'; }, /predates the approval request/);
   rejects(receipt => { receipt.postcondition_inspections[0].responded_at = '2026-08-25T09:00:00Z'; }, /postcondition does not follow/);
+});
+
+test('returns a stable adversarial-verification report', () => {
+  const receipt = copy();
+  receipt.executed_writes.push(structuredClone(receipt.executed_writes[0]));
+  const report = validateReceiptReport(receipt);
+  assert.equal(report.valid, false);
+  assert.equal(report.code, 'WRITE_BUDGET_INVALID');
+  assert.match(report.message, /exactly one executed write/);
+});
+
+test('validates the persisted Deny, Allow, and contract-refusal trial', async () => {
+  const trial = JSON.parse(
+    await readFile(new URL('../evidence/go-pivot-evidence-receipt.json', import.meta.url), 'utf8'),
+  );
+  const evidence = validateAuthorityTrial(trial);
+  assert.equal(evidence.deny.decision, 'deny');
+  assert.equal(evidence.allow.decision, 'allow');
+  assert.equal(evidence.humanBlock.state_changed, false);
+  assert.equal(evidence.contractBlock.state_changed, false);
+
+  const fabricated = structuredClone(trial);
+  fabricated.actions_blocked[0].state_changed = true;
+  assert.throws(() => validateAuthorityTrial(fabricated), /no-write result/);
 });

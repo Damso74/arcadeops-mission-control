@@ -100,10 +100,17 @@ flowchart LR
 | Evidence integrity | All 22 required checks are true | **22/22** |
 
 The public
-[Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/)
-turns the final persisted session into a deterministic Mission Replay. It reads the versioned
-[Evidence Receipt](evidence/submission-evidence-receipt.json) and fails closed:
-remove any required proof and the success state disappears.
+[Authority Ledger](https://damso74.github.io/arcadeops-mission-control/evidence_console/)
+reconstructs the final persisted session as an inspectable chain of evidence. Select any event to
+compare expected and observed state, open the source records, or challenge an in-memory copy with
+six adversarial mutations. It reads the versioned
+[Evidence Receipt](evidence/submission-evidence-receipt.json) and fails closed: remove any required
+proof and every operational success claim disappears.
+
+The Ledger also validates the earlier persisted acceptance trial that proves both negative paths:
+a native human Deny caused zero writes, and an out-of-scope request was refused by the executable
+Authority Contract with zero state change. That historical run explicitly discloses that it did not
+use Daytona or a subagent.
 
 ## Evidence status
 
@@ -112,6 +119,7 @@ remove any required proof and the success state disappears.
 | Persisted TrueForge session | `01m0w4epkt6803zxs2awnhgz8s` |
 | Public proof surface | [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/) |
 | Versioned proof | [Evidence Receipt](evidence/submission-evidence-receipt.json) |
+| Portable verifier | `node bin/arcadeops.mjs verify evidence/submission-evidence-receipt.json` |
 | Required checks | 22 / 22 verified |
 | Final status | `SUBMISSION_ACCEPTANCE_PASS` |
 
@@ -158,6 +166,15 @@ python -m http.server 4173 --bind 127.0.0.1
 ```
 
 Open <http://127.0.0.1:4173/evidence_console/>.
+
+Verify the same chain without a browser:
+
+```powershell
+node bin/arcadeops.mjs verify evidence/submission-evidence-receipt.json
+```
+
+The command exits non-zero and reports a stable refusal code when authority, ordering, scope,
+sandbox, recovery, or write-budget evidence is missing or inconsistent.
 
 ## Reproduce the full workflow
 
@@ -233,8 +250,8 @@ npm --prefix mcp_server test
 npm --prefix mcp_server audit --omit=dev --audit-level=high
 ```
 
-The suites cover workflow ordering, receipt validation, console fail-closed
-behavior, authorization denial, expiry, replay, concurrency and the MCP
+The suites cover workflow ordering, Receipt and historical-trial validation, portable CLI behavior,
+six adversarial console mutations, authorization denial, expiry, replay, concurrency and the MCP
 black-box contract. The same checks run in
 [Submission CI](https://github.com/Damso74/arcadeops-mission-control/actions/workflows/ci.yml).
 
@@ -249,7 +266,9 @@ part of the passing submission suite.
 | --- | --- |
 | [`mcp_server/`](mcp_server/) | Governed rollback tools, executable contract and black-box tests |
 | [`runner/`](runner/) | TrueForge configuration, acceptance runner and strict exporter |
-| [`evidence_console/`](evidence_console/) | Receipt-backed Mission Replay and public proof surface |
+| [`evidence_console/`](evidence_console/) | Receipt-backed Authority Ledger, Evidence Inspector and adversarial workbench |
+| [`bin/arcadeops.mjs`](bin/arcadeops.mjs) | Portable fail-closed Receipt verifier |
+| [`schemas/`](schemas/) | Public JSON Schema for portable evidence tooling |
 | [`evidence/`](evidence/) | Versioned precursor and final Evidence Receipts |
 | [`demo_assets/`](demo_assets/) | Reproducible demo renderer and media verification |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Detailed runtime and trust-boundary design |
@@ -271,8 +290,9 @@ by Qodo, remediated and then merged by a human.
 | [#4](https://github.com/Damso74/arcadeops-mission-control/pull/4) | Judge-ready README and submission alignment | CI and GitGuardian passed |
 | [#5](https://github.com/Damso74/arcadeops-mission-control/pull/5) | Human-first Evidence Console | Qodo-reviewed, CI and GitGuardian passed |
 | [#6](https://github.com/Damso74/arcadeops-mission-control/pull/6) | Verified Mission Replay and receipt-derived claims | 2 findings resolved, final review: 0 bugs, 0 violations |
+| [#7](https://github.com/Damso74/arcadeops-mission-control/pull/7) | Submission evidence, provenance and judge documentation | 2 findings resolved, final review: 0 bugs, 0 violations |
 
-All six PRs passed CI and GitGuardian before human merge.
+All seven merged PRs passed CI and GitGuardian before human merge.
 
 ## Safety, scope and disclosure
 
