@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 
 const assetDirectory = path.dirname(fileURLToPath(import.meta.url));
 const baseUrl = (process.env.DEMO_BASE_URL || "http://127.0.0.1:4173").replace(/\/$/, "");
-const narration = process.env.DEMO_NARRATION || "narration-final.wav";
+const narration = process.env.DEMO_NARRATION || "narration-final.mp3";
 if (path.basename(narration) !== narration) {
   throw new Error("DEMO_NARRATION must name a file inside demo_assets");
 }
