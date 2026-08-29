@@ -6,7 +6,7 @@ The agent starts with a real M C P inspection: eighteen point four percent error
 
 Next, the agent generates a fail-closed Python validator and runs it inside a Daytona sandbox. The code calls the M C P tools again and checks the incident, service, versions, threshold, and token. Without the exact Sandbox Validation Pass result, the workflow stops.
 
-Only then does the agent request the rollback. TrueForge recognizes the irreversible tool call and pauses. The human sees the exact action and chooses Allow or Deny. No approval is inferred. No click is automated. Authority stays human.
+Only then does the agent request the rollback. TrueForge recognizes the irreversible tool call and pauses. The participant sees the exact action and explicitly chooses Allow or Deny. This run persisted one Allow input; its user-interface activation was delegated, not the decision. No approval is inferred. Authority stays human.
 
 After approval, exactly one rollback executes. A fresh inspection shows version forty-one is healthy and the error rate has fallen to zero point seven percent. Replay fails. Concurrent attempts still allow one write. Out-of-scope actions return Authority Denied.
 

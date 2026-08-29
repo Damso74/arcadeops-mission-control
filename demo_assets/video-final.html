@@ -189,12 +189,40 @@ function drawScreenshot(image, progress, alpha = 1) {
   ctx.restore();
 }
 
+function drawApprovalScreenshot(image, progress, alpha = 1) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const eased = easeOut(progress);
+  const cardX = 54, cardY = 160 + (1 - eased) * 10, cardW = 1172, cardH = 492;
+  ctx.shadowColor = 'rgba(0,0,0,0.44)'; ctx.shadowBlur = 34; ctx.shadowOffsetY = 18;
+  ctx.fillStyle = '#14120f'; roundedRect(cardX, cardY, cardW, cardH, 18);
+  ctx.shadowColor = 'transparent';
+  ctx.save(); ctx.beginPath(); ctx.roundRect(cardX + 7, cardY + 7, cardW - 14, cardH - 14, 12); ctx.clip();
+  // Preserve real TrueForge chrome and the native approval row. The request
+  // editor between them contains a state-bound token and is intentionally not
+  // drawn into the public video.
+  ctx.drawImage(image, 0, 0, 1280, 70, cardX + 7, cardY + 7, cardW - 14, 64);
+  ctx.fillStyle = '#171512'; ctx.fillRect(cardX + 7, cardY + 71, cardW - 14, cardH - 78);
+  text(['STATE-BOUND REQUEST ARGUMENTS REDACTED'], cardX + 88, cardY + 144, 12, muted, 820);
+  const sourceX = 330, sourceY = 350, sourceW = 700, sourceH = 100;
+  const targetX = cardX + 88, targetY = cardY + 188, targetW = cardW - 176;
+  const targetH = targetW * sourceH / sourceW;
+  ctx.drawImage(image, sourceX, sourceY, sourceW, sourceH, targetX, targetY, targetW, targetH);
+  ctx.strokeStyle = 'rgba(242,184,125,0.56)'; ctx.lineWidth = 2;
+  ctx.strokeRect(targetX - 1, targetY - 1, targetW + 2, targetH + 2);
+  text(['Real native TrueForge checkpoint · participant decision required'], cardX + 88, cardY + 404, 18, ink, 650);
+  text(['The Receipt proves the persisted approval input and ordering; it does not authenticate approver identity.'], cardX + 88, cardY + 439, 14, muted, 540);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(242,184,125,0.42)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 18); ctx.stroke();
+  ctx.restore();
+}
+
 function drawEvidenceScene(index, progress, alpha, titleLines, pill, activeStep) {
   ctx.save(); ctx.globalAlpha *= alpha;
   drawBrandHeader(`0${index - 1} / 05`, 1);
   text(titleLines.slice(0, 1), 66, 132, 30, ink, 680, 1.08, 'Georgia');
   drawPill(pill, 928, 108, index === 6 ? green : copperLight);
-  drawScreenshot(images[index - 2], progress, 1);
+  if (index === 4) drawApprovalScreenshot(images[index - 2], progress, 1);
+  else drawScreenshot(images[index - 2], progress, 1);
   text(['FULL PAGE · LIVE HARNESS EVIDENCE'], 66, 686, 11, muted, 760);
   ctx.restore();
 }
@@ -250,7 +278,7 @@ function drawScene(index, progress, alpha) {
   } else if (index === 3) {
     drawEvidenceScene(index, progress, 1, ['Generated validation', 'runs inside Daytona.'], 'SANDBOX_VALIDATION_PASS', 2);
   } else if (index === 4) {
-    drawEvidenceScene(index, progress, 1, ['TrueForge pauses', 'before the write.'], 'HUMAN APPROVAL REQUIRED', 3);
+    drawEvidenceScene(index, progress, 1, ['TrueForge pauses', 'before the write.'], 'PARTICIPANT DECISION REQUIRED', 3);
   } else if (index === 5) {
     drawEvidenceScene(index, progress, 1, ['Recovery is re-inspected.', 'Scope still wins.'], 'v41 · HEALTHY · 0.7%', 3);
   } else if (index === 6) {

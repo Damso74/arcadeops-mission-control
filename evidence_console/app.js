@@ -210,18 +210,18 @@ function buildEvents(receipt, evidence) {
     },
     {
       kicker: 'Authority boundary',
-      title: 'Human Allow released one action',
+      title: 'Allow input released one action',
       time: decision.decided_at,
       provenance: 'PERSISTED',
       state: 'AUTHORIZED',
       description: 'A persisted approval input received through the local TrueForge UI and the governed write share one action identity. The Receipt does not independently identify the approver.',
       comparisons: [
-        ['Decision actor', 'human via TrueForge UI', decision.actor.replaceAll('_', ' ')],
+        ['Decision source', 'approval input via TrueForge UI', decision.actor.replaceAll('_', ' ')],
         ['Decision', 'allow', decision.decision],
         ['Call identity', shortId(callId), shortId(decision.tool_call_id)],
       ],
       summary: '4 records · 1 identity · 0 unmatched',
-      records: ['approval event', 'human decision', 'write call', 'write response'],
+      records: ['approval event', 'approval input', 'write call', 'write response'],
       raw: { approval_request: approval, human_decision: decision, correlated_write: receipt.approval_correlated_writes[0] },
     },
     {

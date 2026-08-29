@@ -89,7 +89,7 @@
           </div>
           <div class="challenge-workbench">
             <div class="mutation-list" id="mutation-list" aria-label="Receipt mutations">
-              <button type="button" data-mutation="remove-approval"><span>01</span><strong>Remove human approval</strong><small>Break the native authority record</small></button>
+              <button type="button" data-mutation="remove-approval"><span>01</span><strong>Remove approval input</strong><small>Break the native authority record</small></button>
               <button type="button" data-mutation="duplicate-write"><span>02</span><strong>Duplicate the write</strong><small>Exceed the one-write budget</small></button>
               <button type="button" data-mutation="change-target"><span>03</span><strong>Change target to v40</strong><small>Violate the state-bound scope</small></button>
               <button type="button" data-mutation="replace-sandbox"><span>04</span><strong>Replace Daytona</strong><small>Break isolated execution evidence</small></button>
@@ -128,7 +128,7 @@
       <section class="trials success-only" aria-labelledby="trials-title">
         <header><p class="section-kicker">Persisted authority outcomes</p><h2 id="trials-title">Capability does not equal permission.</h2><p>These outcomes come from versioned TrueForge receipts. Historical acceptance trials disclose their narrower scope.</p></header>
         <div class="trial-grid">
-          <article class="trial-card" data-outcome="pass"><span>01</span><small>Integrated mission</small><h3>Safe rollback</h3><p>Verifier and Daytona passed. Human Allow released one governed write.</p><strong>1 write · recovery verified</strong></article>
+          <article class="trial-card" data-outcome="pass"><span>01</span><small>Integrated mission</small><h3>Safe rollback</h3><p>Verifier and Daytona passed. One Allow input released one governed write.</p><strong>1 write · recovery verified</strong></article>
           <article class="trial-card" data-outcome="blocked"><span>02</span><small>Native checkpoint</small><h3>Human denied</h3><p>A persisted TrueForge Deny stopped the action before state change.</p><strong>0 writes · state unchanged</strong></article>
           <article class="trial-card" data-outcome="blocked"><span>03</span><small>Server-side contract</small><h3>Scope refused</h3><p>The agent requested a status change outside its Authority Contract.</p><strong>AUTHORITY_DENIED · 0 writes</strong></article>
         </div>

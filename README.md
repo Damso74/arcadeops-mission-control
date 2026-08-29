@@ -117,7 +117,7 @@ use Daytona or a subagent.
 
 | Item | Value |
 | --- | --- |
-| Persisted TrueForge session | `01m0w4epkt6803zxs2awnhgz8s` |
+| Persisted TrueForge session | `01m15rnk2bggz4dqdbhmcfr7js` |
 | Public evidence surface | [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/) |
 | Versioned evidence | [Evidence Receipt](evidence/submission-evidence-receipt.json) |
 | Portable verifier | `node bin/arcadeops.mjs verify evidence/submission-evidence-receipt.json` |
@@ -136,9 +136,10 @@ remains correlated to this run by the persisted execution evidence: a ready
 MCP-bridge validator and its exact `SANDBOX_VALIDATION_PASS` marker.
 
 The persisted approval sequence also took real time. TrueForge requested approval at
-`2026-08-25T09:38:46Z` and the human Allow was recorded at
-`2026-08-25T09:53:35Z`, roughly 14 minutes and 48 seconds later. The single
-write ran only after that decision.
+`2026-08-29T03:24:09.170Z` and the Allow input was recorded at
+`2026-08-29T03:24:42.589Z`, roughly 33 seconds later. The single write ran only
+after that decision. The Receipt proves the persisted UI input and ordering, not
+the independently authenticated identity of the approver.
 
 ## Trust boundaries
 

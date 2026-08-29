@@ -28,7 +28,9 @@ personal notifications and unrelated conversation history. Keep sufficient
 TrueForge UI chrome to establish that the harness is real.
 
 The approval scene must show a real native card. Never fabricate an Allow/Deny
-checkpoint from a post-execution recap. A human decision must not be automated.
+checkpoint from a post-execution recap. The participant must make the decision;
+if UI activation is delegated, describe it as delegated rather than claiming a
+physically direct click. The Receipt itself does not authenticate the approver.
 
 ## Local commands
 

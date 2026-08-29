@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:12,000
+An AI agent can roll back a broken service. The hard question is not whether it can act.
+It is who gets to say yes, what is allowed, and whether the result can be proved. This is ArcadeOps.
+
+2
+00:00:12,000 --> 00:00:25,000
+Inside TrueForge, checkout API is degraded on version forty-two. The mission is narrow: investigate,
+verify, and, only if every gate passes, roll back to version forty-one. One write. Nothing broader.
+
+3
+00:00:25,000 --> 00:00:43,000
+The agent starts with a real MCP inspection: 18.4% errors. TrueForge creates one Verifier assigned
+a read-only task. It independently checks the incident and prepares the same rollback: two reads, zero write attempts.
+
+4
+00:00:43,000 --> 00:01:02,000
+Next, the agent generates a fail-closed Python validator inside a Daytona sandbox. It checks the incident,
+service, versions, threshold, and token. Without SANDBOX_VALIDATION_PASS, the workflow stops.
+
+5
+00:01:02,000 --> 00:01:21,000
+Only then does TrueForge pause the irreversible tool call. The participant explicitly chooses Allow or Deny.
+This run persisted one Allow input; its UI activation was delegated, not the decision. No approval is inferred.
+
+6
+00:01:21,000 --> 00:01:36,000
+After approval, exactly one rollback executes. A fresh inspection shows version forty-one healthy at 0.7% errors.
+Replay fails, concurrent attempts still permit one write, and out-of-scope actions return Authority Denied.
+
+7
+00:01:36,000 --> 00:01:50,000
+The Evidence Console turns the persisted session into a Receipt anyone can inspect. Twenty-two checks correlate
+the tools, Verifier, Daytona run, approval input, single write, and recovered service. Remove a record and success disappears.
+
+8
+00:01:50,000 --> 00:02:04,900
+TrueForge supplies the harness. ArcadeOps makes authority enforceable.
+The agent does the work. The human keeps the decision. The Receipt carries the correlated evidence.

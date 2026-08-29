@@ -24,7 +24,7 @@ export const REQUIRED_CHECKS = Object.freeze([
 ]);
 
 const ERROR_RULES = Object.freeze([
-  [/human decision|human Allow/i, 'HUMAN_DECISION_INVALID'],
+  [/human decision|human Allow|approval input|Allow evidence/i, 'HUMAN_DECISION_INVALID'],
   [/approval.*correlat|not correlated|approval event identity/i, 'APPROVAL_CORRELATION_BROKEN'],
   [/timestamp|predates|does not follow|before the write|before write/i, 'EVENT_ORDER_INVALID'],
   [/sandbox/i, 'SANDBOX_EVIDENCE_INVALID'],
@@ -186,7 +186,7 @@ export function validateReceipt(receipt) {
   requireThat(Array.isArray(receipt.approval_correlated_writes) && receipt.approval_correlated_writes.length === 1, 'exactly one approval-correlated write is required');
   requireThat(Array.isArray(receipt.write_calls) && receipt.write_calls.length === 1, 'exactly one write attempt is required');
   requireThat(Array.isArray(receipt.approval_requests) && receipt.approval_requests.length === 1, 'exactly one approval request is required');
-  requireThat(Array.isArray(receipt.human_decisions) && receipt.human_decisions.length === 1, 'exactly one human decision is required');
+  requireThat(Array.isArray(receipt.human_decisions) && receipt.human_decisions.length === 1, 'exactly one approval input is required');
 
   const write = receipt.executed_writes[0];
   const correlatedWrite = receipt.approval_correlated_writes[0];
@@ -219,9 +219,12 @@ export function validateReceipt(receipt) {
   requireThat(
     decision.event_type === 'turn.created'
     && decision.input_type === 'user.tool_approval',
-    'human decision provenance is not a persisted TrueForge approval input',
+    'approval input provenance is not a persisted TrueForge UI record',
   );
-  requireThat(decision.decision === 'allow' && decision.actor === 'human_via_trueforge_ui', 'human Allow evidence is missing');
+  requireThat(
+    decision.decision === 'allow' && decision.actor === 'approval_input_via_trueforge_ui',
+    'Allow evidence is missing or overstates approver identity',
+  );
   requireThat(
     [write, correlatedWrite, writeCall].every(call => (
       call.tool === 'execute_rollback'
@@ -287,14 +290,14 @@ export function validateReceipt(receipt) {
 
   const writeAttemptTime = requireTimestamp(writeCall.attempted_at, 'write attempt');
   const approvalRequestTime = requireTimestamp(approval.requested_at, 'approval request');
-  const decisionTime = requireTimestamp(decision.decided_at, 'human decision');
+  const decisionTime = requireTimestamp(decision.decided_at, 'approval input');
   const writeResponseTime = requireTimestamp(write.responded_at, 'write response');
   requireThat(Math.max(...verifierResponseTimes) < writeAttemptTime, 'Verifier did not finish before the write attempt');
   requireThat(Math.max(...preconditions.map(item => item.respondedAt)) < writeAttemptTime, 'precondition was not observed before the write');
   requireThat(sandboxValidationTime < writeAttemptTime, 'sandbox validation did not finish before the write');
   requireThat(writeAttemptTime <= approvalRequestTime, 'approval was requested before the write attempt');
-  requireThat(approvalRequestTime <= decisionTime, 'human decision predates the approval request');
-  requireThat(decisionTime < writeResponseTime, 'write response does not follow human Allow');
+  requireThat(approvalRequestTime <= decisionTime, 'approval input predates the approval request');
+  requireThat(decisionTime < writeResponseTime, 'write response does not follow Allow input');
   requireThat(writeResponseTime < Math.min(...postconditions.map(item => item.respondedAt)), 'postcondition does not follow the write response');
   requireThat(writeResponseTime <= requireTimestamp(receipt.generated_at, 'receipt generation'), 'receipt predates the executed write');
 

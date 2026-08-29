@@ -12,6 +12,9 @@ const sourceReceipt = JSON.parse(
   await readFile(new URL('../evidence/submission-evidence-receipt.json', import.meta.url), 'utf8'),
 );
 const copy = () => structuredClone(sourceReceipt);
+const expectedVerifierRespondedAt = new Date(Math.max(
+  ...sourceReceipt.verifier_tool_calls.map(item => Date.parse(item.responded_at)),
+)).toISOString();
 const rejects = (mutate, pattern = /Receipt rejected:/) => {
   const receipt = copy();
   mutate(receipt);
@@ -22,14 +25,14 @@ test('accepts the complete persisted receipt', () => {
   const evidence = validateReceipt(copy());
   assert.equal(Object.keys(evidence.checks).length, REQUIRED_CHECKS.length);
   assert.equal(evidence.write.response.recovered, true);
-  assert.equal(evidence.verifierRespondedAt, '2026-08-25T09:38:04.695Z');
+  assert.equal(evidence.verifierRespondedAt, expectedVerifierRespondedAt);
 });
 
 test('derives the Verifier time from its correlated calls', () => {
   const receipt = copy();
   receipt.precondition_inspections = receipt.precondition_inspections.filter(item => item.thread_id === 'main');
   const evidence = validateReceipt(receipt);
-  assert.equal(evidence.verifierRespondedAt, '2026-08-25T09:38:04.695Z');
+  assert.equal(evidence.verifierRespondedAt, expectedVerifierRespondedAt);
 });
 
 test('rejects missing, partial, false, or extra checks', () => {
@@ -62,8 +65,8 @@ test('rejects uncorrelated approval and write identifiers', () => {
   rejects(receipt => { receipt.approval_requests[0].event_type = 'model.message'; }, /approval request provenance/);
   rejects(receipt => { receipt.approval_requests[0].tool = 'prepare_rollback'; }, /approval request provenance/);
   rejects(receipt => { receipt.approval_requests[0].mission_id = 'different-mission'; }, /approval request provenance/);
-  rejects(receipt => { receipt.human_decisions[0].event_type = 'model.message'; }, /decision provenance/);
-  rejects(receipt => { receipt.human_decisions[0].input_type = 'user.message'; }, /decision provenance/);
+  rejects(receipt => { receipt.human_decisions[0].event_type = 'model.message'; }, /approval input provenance/);
+  rejects(receipt => { receipt.human_decisions[0].input_type = 'user.message'; }, /approval input provenance/);
   rejects(receipt => { receipt.human_decisions[0].tool_call_id = 'different-call'; }, /not correlated/);
   rejects(receipt => { receipt.approval_correlated_writes[0].mission_id = 'different-mission'; }, /mission_id/);
   rejects(receipt => { receipt.executed_writes[0].server = 'untrusted-server'; }, /governed MCP transport/);
