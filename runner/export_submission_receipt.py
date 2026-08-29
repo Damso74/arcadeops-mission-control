@@ -178,6 +178,17 @@ def summarize_verifier_call(call: dict[str, Any], response: dict[str, Any] | Non
     }
 
 
+def governed_verifier_calls(calls: list[dict[str, Any]], mission_id: str) -> list[dict[str, Any]]:
+    """Keep only mission-bound Governed Operations calls made by Verifier."""
+    return [
+        call
+        for call in calls
+        if call.get("server") == MCP_NAME
+        and call.get("mission_id") == mission_id
+        and call.get("tool") in READ_ONLY_SANDBOX_TOOLS
+    ]
+
+
 def correlated_executed_writes(
     executed_writes: list[dict[str, Any]],
     approvals: list[dict[str, Any]],
@@ -262,6 +273,28 @@ def effective_call(call: dict[str, Any], event: dict[str, Any]) -> dict[str, Any
             **sandbox_command_evidence(command),
         }
     return result
+
+
+def resolve_approval_call(
+    call: dict[str, Any],
+    event: dict[str, Any],
+    observed_calls: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Resolve TrueForge's compact approval reference to its source tool call.
+
+    Persisted ``tool.approval_required`` events may carry only ``id`` and
+    ``source_event_id``.  The source ``model.message`` remains the authoritative
+    record for the tool, server, thread, and mission metadata.  Fail closed when
+    that reference cannot be resolved instead of inferring fields from the UI.
+    """
+    call_id = call.get("id")
+    resolved = next(
+        (item for item in observed_calls if call_id and item.get("tool_call_id") == call_id),
+        None,
+    )
+    if resolved:
+        return {**resolved, "thread_id": event.get("thread_id") or resolved.get("thread_id")}
+    return None
 
 
 def is_recovered_postcondition(payload: Any) -> bool:
@@ -361,7 +394,9 @@ def main() -> int:
             }
         elif event.get("type") == "tool.approval_required":
             for call in event.get("tool_calls") or []:
-                approval_call = effective_call(call, event)
+                approval_call = resolve_approval_call(call, event, calls)
+                if approval_call is None:
+                    continue
                 approvals.append(
                     {
                         "approval_event_id": event.get("id"),
@@ -385,7 +420,7 @@ def main() -> int:
                             "event_type": event.get("type"),
                             "input_type": item.get("type"),
                             "tool_call_id": item.get("tool_call_id"),
-                            "actor": "human_via_trueforge_ui",
+                            "actor": "approval_input_via_trueforge_ui",
                             "decision": approval.get("status"),
                             "reason_provided": bool(approval.get("reason")),
                             "decided_at": event.get("created_at"),
@@ -422,18 +457,18 @@ def main() -> int:
     ], sandbox_ids)
     verifier_calls = [call for call in calls if call.get("thread_id") in verifier_thread_ids]
     mission_id = observed_mission_id(calls, responses)
+    verifier_governed_calls = governed_verifier_calls(verifier_calls, mission_id)
     verifier_tools = {
         call.get("tool")
-        for call in verifier_calls
+        for call in verifier_governed_calls
         if call.get("server") == MCP_NAME
-        and call.get("mission_id") == mission_id
         and isinstance(responses.get(call.get("tool_call_id"), {}).get("payload"), dict)
         and not responses[call["tool_call_id"]]["payload"].get("error")
         and responses[call["tool_call_id"]]["payload"].get("mission_id") == mission_id
     }
     verifier_tool_evidence = [
         summarize_verifier_call(call, responses.get(call.get("tool_call_id")))
-        for call in verifier_calls
+        for call in verifier_governed_calls
     ]
     write_calls = [call for call in calls if call.get("tool") == "execute_rollback" and call.get("server") == MCP_NAME]
     executed_writes = [
@@ -466,12 +501,12 @@ def main() -> int:
         and item.get("transport_tool") == "execute_rollback"
         and item.get("mission_id") == mission_id
     ]
-    human_allow_inputs = [
+    approval_allow_inputs = [
         item
         for item in allowed_write_decisions
         if item.get("event_type") == "turn.created"
         and item.get("input_type") == "user.tool_approval"
-        and item.get("actor") == "human_via_trueforge_ui"
+        and item.get("actor") == "approval_input_via_trueforge_ui"
     ]
 
     pass_times = [
@@ -520,7 +555,8 @@ def main() -> int:
         "submission_agent_resolved": agent.get("name") == AGENT_NAME,
         "all_turns_terminal": bool(turns) and all((turn.get("state") or {}).get("status") == "done" for turn in turns),
         "exactly_one_verifier": len(verifier_events) == 1,
-        "verifier_used_real_mcp": {"inspect_incident", "prepare_rollback"}.issubset(verifier_tools),
+        "verifier_used_real_mcp": len(verifier_governed_calls) == 2
+        and verifier_tools == READ_ONLY_SANDBOX_TOOLS,
         "verifier_never_attempted_write": all(call.get("tool") != "execute_rollback" for call in verifier_calls),
         "daytona_provider_ready": daytona_ready,
         "daytona_sandbox_created": len(sandbox_ids) == 1 and all(is_daytona_sandbox_id(item) for item in sandbox_ids),
@@ -537,7 +573,7 @@ def main() -> int:
         "sandbox_validation_before_write": bool(pass_times and write_attempt_times)
         and min(pass_times) < min(write_attempt_times),
         "native_approval_pause_for_write": len(approved_write_ids) == 1 and len(native_approval_events) == 1,
-        "human_allow_for_write": len(allowed_write_decisions) == 1 and len(human_allow_inputs) == 1,
+        "human_allow_for_write": len(allowed_write_decisions) == 1 and len(approval_allow_inputs) == 1,
         "write_response_after_human_allow": bool(decision_times and executed_response_times)
         and min(decision_times) < min(executed_response_times),
         "authorized_rollback_executed_once": len(executed_writes) == 1 and len(authorized_executed_writes) == 1,
@@ -606,7 +642,8 @@ def main() -> int:
         "completed_at": max(timestamps) if timestamps else session.get("updated_at"),
         "final_status": "SUBMISSION_ACCEPTANCE_PASS",
         "limitations": [
-            "The human actor is the authenticated local TrueForge user; no richer approver profile was observed.",
+            "The persisted event records an approval input received through the local TrueForge UI; the Receipt does not independently authenticate or identify the approver.",
+            "The Receipt validates internal consistency but does not cryptographically attest the JSON's runtime origin or enable public recomputation from local raw events.",
             "The incident, service metrics, and rollback are fictional and local-only.",
         ],
     }

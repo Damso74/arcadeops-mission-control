@@ -10,12 +10,14 @@ from export_submission_receipt import (
     correlate_sandbox_exec_calls,
     correlated_executed_writes,
     effective_call,
+    governed_verifier_calls,
     is_daytona_provider_ready,
     is_daytona_sandbox_id,
     is_degraded_precondition,
     is_recovered_postcondition,
     observed_mission_id,
     response_payload,
+    resolve_approval_call,
     sandbox_command_evidence,
     strict_python_bridge_tools,
     summarize_thread_event,
@@ -30,6 +32,7 @@ class SubmissionWorkflowTests(unittest.TestCase):
         self.assertEqual(AGENT_NAME, "arcadeops-mission-control-v2")
         self.assertTrue(manifest["config"]["sandbox"]["enabled"])
         self.assertTrue(manifest["config"]["dynamic_sub_agents"]["enabled"])
+        self.assertEqual(manifest["mcp_servers"][0]["enable_tools"], ["@all"])
         self.assertEqual(manifest["mcp_servers"][0]["require_approval_for_tools"], ["execute_rollback"])
         self.assertIn("SANDBOX_VALIDATION_PASS", manifest["instructions"])
         self.assertIn("Verifier must never call execute_rollback", manifest["instructions"])
@@ -81,6 +84,18 @@ class SubmissionWorkflowTests(unittest.TestCase):
         self.assertTrue(parsed["sandbox_command_evidence"]["mentions_prepare_rollback"])
         self.assertTrue(parsed["sandbox_command_evidence"]["read_only_bridge"])
         self.assertNotIn("command", parsed["sandbox_command_evidence"])
+
+    def test_verifier_receipt_excludes_discovery_transport_calls(self) -> None:
+        calls = [
+            {"tool": "list_tools", "server": "deferred_tools"},
+            {"tool": "get_tool_info", "server": "deferred_tools"},
+            {"tool": "inspect_incident", "server": "governed-operations", "mission_id": "mission-1"},
+            {"tool": "prepare_rollback", "server": "governed-operations", "mission_id": "mission-1"},
+        ]
+
+        selected = governed_verifier_calls(calls, "mission-1")
+
+        self.assertEqual([item["tool"] for item in selected], ["inspect_incident", "prepare_rollback"])
 
     def test_effective_call_rejects_literal_or_dynamically_named_sandbox_write(self) -> None:
         commands = [
@@ -162,6 +177,58 @@ class SubmissionWorkflowTests(unittest.TestCase):
         matched = [{"tool_call_id": "write-1", "decision": "allow"}]
         self.assertEqual(correlated_executed_writes(writes, approvals, mismatched), [])
         self.assertEqual(correlated_executed_writes(writes, approvals, matched), writes)
+
+    def test_compact_approval_reference_resolves_to_source_call(self) -> None:
+        observed = [{
+            "thread_id": "main",
+            "tool_call_id": "write-1",
+            "tool": "execute_rollback",
+            "tool_type": "mcp",
+            "server": "governed-operations",
+            "transport_tool": "execute_rollback",
+            "mission_id": "mission-1",
+            "attempted_at": "2026-08-29T03:24:09Z",
+        }]
+        event = {
+            "thread_id": "main",
+            "created_at": "2026-08-29T03:24:09.1Z",
+        }
+
+        resolved = resolve_approval_call(
+            {"id": "write-1", "source_event_id": "event-1"},
+            event,
+            observed,
+        )
+
+        self.assertEqual(resolved["tool"], "execute_rollback")
+        self.assertEqual(resolved["server"], "governed-operations")
+        self.assertEqual(resolved["mission_id"], "mission-1")
+
+    def test_unresolved_compact_approval_reference_fails_closed(self) -> None:
+        resolved = resolve_approval_call(
+            {"id": "missing", "source_event_id": "event-1"},
+            {"thread_id": "main", "created_at": "2026-08-29T03:24:09Z"},
+            [],
+        )
+
+        self.assertIsNone(resolved)
+
+    def test_unresolved_rich_approval_reference_fails_closed(self) -> None:
+        resolved = resolve_approval_call(
+            {
+                "id": "missing",
+                "source_event_id": "event-1",
+                "tool_info": {"type": "mcp", "server_name": "governed-operations"},
+                "function": {
+                    "name": "execute_rollback",
+                    "arguments": json.dumps({"mission_id": "mission-1"}),
+                },
+            },
+            {"thread_id": "main", "created_at": "2026-08-29T03:24:09Z"},
+            [],
+        )
+
+        self.assertIsNone(resolved)
 
     def test_verifier_model_is_derived_from_persisted_agent(self) -> None:
         self.assertEqual(

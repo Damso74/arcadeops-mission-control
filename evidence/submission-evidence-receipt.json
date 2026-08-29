@@ -1,13 +1,13 @@
 {
   "schema_version": "2.1.0",
   "receipt_kind": "trueforge-safe-rollback-acceptance",
-  "generated_at": "2026-08-25T13:42:53.901778Z",
+  "generated_at": "2026-08-29T03:52:41.694593Z",
   "source": "TrueForge 0.1.4 persisted public APIs",
   "mission_id": "TF-SAFE-ROLLBACK-001",
   "incident_id": "INC-2026-042",
   "service_id": "checkout-api",
   "target_version": "v41",
-  "session_id": "01m0w4epkt6803zxs2awnhgz8s",
+  "session_id": "01m15rnk2bggz4dqdbhmcfr7js",
   "agent_identity": {
     "id": "01m0w43jjrmpeer1h4rm6h5a8j",
     "name": "arcadeops-mission-control-v2"
@@ -18,48 +18,48 @@
   "sandbox_references": [
     {
       "provider": "daytona",
-      "id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38"
+      "id_sha256": "fcea50b76d4a3a699b85616311cc6daf043651c701d3fb49576fa8b82195cf47"
     }
   ],
   "subagent_events": [
     {
-      "event_id": "01m0w4h9hrcrrv7z9mj8dy381b",
-      "thread_id": "15037293-49a9-402f-a59d-e5c31f88ee50",
+      "event_id": "01m15rp3a0sm0mtj287h95f62h",
+      "thread_id": "dcd6c085-da83-4fff-b08a-85d06276f93a",
       "name": "Verifier",
       "type": "dynamic",
       "parent": {
         "thread_id": "main",
-        "tool_call_id": "toolu_014woA6QQzn3KUQ9q9DuqAL1"
+        "tool_call_id": "toolu_01ENGrmnJt6LG2t1ZfxgHoyW"
       },
-      "created_at": "2026-08-25T09:38:00.376Z"
+      "created_at": "2026-08-29T03:23:19.232Z"
     }
   ],
   "verifier_tool_calls": [
     {
-      "thread_id": "15037293-49a9-402f-a59d-e5c31f88ee50",
-      "tool_call_id": "toolu_01Da5CNRBCBjEoNsThm7Pdgd",
+      "thread_id": "dcd6c085-da83-4fff-b08a-85d06276f93a",
+      "tool_call_id": "toolu_01EwHZFoq3gyWSSxvNhYnYqw",
       "tool": "inspect_incident",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "inspect_incident",
-      "attempted_at": "2026-08-25T09:38:04.679Z",
+      "attempted_at": "2026-08-29T03:23:25.846Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
-      "responded_at": "2026-08-25T09:38:04.695Z",
+      "responded_at": "2026-08-29T03:23:25.867Z",
       "response_evidence": {
         "observed": true,
         "mission_id": "TF-SAFE-ROLLBACK-001"
       }
     },
     {
-      "thread_id": "15037293-49a9-402f-a59d-e5c31f88ee50",
-      "tool_call_id": "toolu_01Bd4AKGYxprixXvySo346PZ",
+      "thread_id": "dcd6c085-da83-4fff-b08a-85d06276f93a",
+      "tool_call_id": "toolu_01Mrn1qW6PoXhXeBwoJb4hFS",
       "tool": "prepare_rollback",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "prepare_rollback",
-      "attempted_at": "2026-08-25T09:38:04.679Z",
+      "attempted_at": "2026-08-29T03:23:25.846Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
-      "responded_at": "2026-08-25T09:38:04.694Z",
+      "responded_at": "2026-08-29T03:23:25.868Z",
       "response_evidence": {
         "observed": true,
         "mission_id": "TF-SAFE-ROLLBACK-001"
@@ -69,164 +69,15 @@
   "sandbox_exec_calls": [
     {
       "thread_id": "main",
-      "tool_call_id": "toolu_01T19PfWApfZwNorWUexj6dv",
+      "tool_call_id": "toolu_017rTvpmGvGkX9cAzGZAU5Q3",
       "tool": "exec",
       "tool_type": "truefoundry-system",
       "server": "sandbox",
       "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:36:46.723Z",
+      "attempted_at": "2026-08-29T03:23:58.987Z",
       "sandbox_command_evidence": {
-        "intent": "Inspect the incident via governed-operations MCP and capture output structure",
-        "command_sha256": "ab43fb94988056d8dd6d894ec9209e561e56de799ff36e52f1a05ba7c1032ea1",
-        "uses_mcp_client": true,
-        "mentions_inspect_incident": true,
-        "mentions_prepare_rollback": false,
-        "mentions_execute_rollback": false,
-        "direct_call_count": 1,
-        "literal_tools": [
-          "inspect_incident"
-        ],
-        "no_write_attempt": true,
-        "read_only_bridge": false
-      },
-      "responded_at": "2026-08-25T09:36:49.528Z",
-      "validation_pass_observed": false
-    },
-    {
-      "thread_id": "main",
-      "tool_call_id": "toolu_01HSLNrYQDZ8gofZGaR3gdjg",
-      "tool": "exec",
-      "tool_type": "truefoundry-system",
-      "server": "sandbox",
-      "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:36:52.406Z",
-      "sandbox_command_evidence": {
-        "intent": "Check the mcp-client CLI tool for issues",
-        "command_sha256": "d7eaaf4b848b5ebe8e37dbd51b31e1dd414b11ba92b9e09a658bbdf0c6a5e6d5",
-        "uses_mcp_client": true,
-        "mentions_inspect_incident": false,
-        "mentions_prepare_rollback": false,
-        "mentions_execute_rollback": false,
-        "direct_call_count": 0,
-        "literal_tools": [],
-        "no_write_attempt": true,
-        "read_only_bridge": false
-      },
-      "responded_at": "2026-08-25T09:36:52.476Z",
-      "validation_pass_observed": false
-    },
-    {
-      "thread_id": "main",
-      "tool_call_id": "toolu_01M4m94LavishaW6Bwfu9zW7",
-      "tool": "exec",
-      "tool_type": "truefoundry-system",
-      "server": "sandbox",
-      "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:36:58.971Z",
-      "sandbox_command_evidence": {
-        "intent": "Run mcp-client via python3 directly to bypass shebang CRLF issue",
-        "command_sha256": "808fe40a45181d4d95a6dae0cd713f13fc13aaa6c14e8da756f3e9784a4195e9",
-        "uses_mcp_client": true,
-        "mentions_inspect_incident": true,
-        "mentions_prepare_rollback": false,
-        "mentions_execute_rollback": false,
-        "direct_call_count": 1,
-        "literal_tools": [
-          "inspect_incident"
-        ],
-        "no_write_attempt": true,
-        "read_only_bridge": false
-      },
-      "responded_at": "2026-08-25T09:37:00.147Z",
-      "validation_pass_observed": false
-    },
-    {
-      "thread_id": "main",
-      "tool_call_id": "toolu_016dfqNfZ8ifQZKpzqsvT58p",
-      "tool": "exec",
-      "tool_type": "truefoundry-system",
-      "server": "sandbox",
-      "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:37:03.849Z",
-      "sandbox_command_evidence": {
-        "intent": "Extract and display the actual inspect_incident result content",
-        "command_sha256": "7dd4c50e1e44d7c3787e580c65b21d6af5682c8248fafcb1cf9828a8254264eb",
-        "uses_mcp_client": false,
-        "mentions_inspect_incident": false,
-        "mentions_prepare_rollback": false,
-        "mentions_execute_rollback": false,
-        "direct_call_count": 0,
-        "literal_tools": [],
-        "no_write_attempt": true,
-        "read_only_bridge": false
-      },
-      "responded_at": "2026-08-25T09:37:03.946Z",
-      "validation_pass_observed": false
-    },
-    {
-      "thread_id": "main",
-      "tool_call_id": "toolu_01XxGgWhpJ62wiN2H92uMuvU",
-      "tool": "exec",
-      "tool_type": "truefoundry-system",
-      "server": "sandbox",
-      "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:37:14.042Z",
-      "sandbox_command_evidence": {
-        "intent": "Display the actual inspect_incident result content",
-        "command_sha256": "95beee4b0b5bf26d26471d0ff517f3850ac9b432f8b8ae64b9a359613083d50a",
-        "uses_mcp_client": false,
-        "mentions_inspect_incident": false,
-        "mentions_prepare_rollback": false,
-        "mentions_execute_rollback": false,
-        "direct_call_count": 0,
-        "literal_tools": [],
-        "no_write_attempt": true,
-        "read_only_bridge": false
-      },
-      "responded_at": "2026-08-25T09:37:14.234Z",
-      "validation_pass_observed": false
-    },
-    {
-      "thread_id": "main",
-      "tool_call_id": "toolu_01X2gJjLfGRFixmzJjKXzFpa",
-      "tool": "exec",
-      "tool_type": "truefoundry-system",
-      "server": "sandbox",
-      "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:37:20.193Z",
-      "sandbox_command_evidence": {
-        "intent": "Verify raw file content directly",
-        "command_sha256": "d1d9baedb07e009b8f143eb6ad55c88a07ee4b05baa7a58a207cf39cecc0ae00",
-        "uses_mcp_client": false,
-        "mentions_inspect_incident": false,
-        "mentions_prepare_rollback": false,
-        "mentions_execute_rollback": false,
-        "direct_call_count": 0,
-        "literal_tools": [],
-        "no_write_attempt": true,
-        "read_only_bridge": false
-      },
-      "responded_at": "2026-08-25T09:37:20.367Z",
-      "validation_pass_observed": false
-    },
-    {
-      "thread_id": "main",
-      "tool_call_id": "toolu_01WiraEdrw1AUoA1MvNcNtJM",
-      "tool": "exec",
-      "tool_type": "truefoundry-system",
-      "server": "sandbox",
-      "transport_tool": "exec",
-      "sandbox_id_sha256": "2083a5a08a73f9b6564180355862f59b6c1cd12c839bb427669d04e06908cf38",
-      "attempted_at": "2026-08-25T09:38:39.556Z",
-      "sandbox_command_evidence": {
-        "intent": "Create a fail-closed Python validator that calls inspect_incident and prepare_rollback via the sandbox mcp_client bridge and checks all required invariants",
-        "command_sha256": "2dd5a91cad79ff69117c814d6eb7661e05b267a221c3a6a7fe6175d9f94d8434",
+        "intent": "Write a fail-closed Python validator that calls inspect_incident and prepare_rollback via the sandbox's mcp_client bridge to governed-operations, and validates all required invariants before allowing a rollback write.",
+        "command_sha256": "695d55450c0018b322be69554a9f1168c8ac601a1a1b7f6991d61cc6904ef26e",
         "uses_mcp_client": true,
         "mentions_inspect_incident": true,
         "mentions_prepare_rollback": true,
@@ -239,60 +90,61 @@
         "no_write_attempt": true,
         "read_only_bridge": true
       },
-      "responded_at": "2026-08-25T09:38:40.392Z",
-      "validation_pass_observed": true
+      "responded_at": "2026-08-29T03:24:02.957Z",
+      "validation_pass_observed": true,
+      "sandbox_id_sha256": "fcea50b76d4a3a699b85616311cc6daf043651c701d3fb49576fa8b82195cf47"
     }
   ],
   "approval_requests": [
     {
-      "approval_event_id": "01m0w4jpx4pkmvrz6bxw32g25r",
+      "approval_event_id": "01m15rqm2jgrdnc980rjv48tj7",
       "event_type": "tool.approval_required",
       "thread_id": "main",
-      "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
+      "tool_call_id": "toolu_01WYT55KQuLt5F5UqitpRazR",
       "tool": "execute_rollback",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "execute_rollback",
       "mission_id": "TF-SAFE-ROLLBACK-001",
-      "requested_at": "2026-08-25T09:38:46.820Z"
+      "requested_at": "2026-08-29T03:24:09.170Z"
     }
   ],
   "human_decisions": [
     {
       "event_type": "turn.created",
       "input_type": "user.tool_approval",
-      "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
-      "actor": "human_via_trueforge_ui",
+      "tool_call_id": "toolu_01WYT55KQuLt5F5UqitpRazR",
+      "actor": "approval_input_via_trueforge_ui",
       "decision": "allow",
       "reason_provided": false,
-      "decided_at": "2026-08-25T09:53:35.348Z"
+      "decided_at": "2026-08-29T03:24:42.589Z"
     }
   ],
   "write_calls": [
     {
       "thread_id": "main",
-      "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
+      "tool_call_id": "toolu_01WYT55KQuLt5F5UqitpRazR",
       "tool": "execute_rollback",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "execute_rollback",
-      "attempted_at": "2026-08-25T09:38:46.816Z",
+      "attempted_at": "2026-08-29T03:24:09.163Z",
       "mission_id": "TF-SAFE-ROLLBACK-001"
     }
   ],
   "executed_writes": [
     {
       "thread_id": "main",
-      "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
+      "tool_call_id": "toolu_01WYT55KQuLt5F5UqitpRazR",
       "tool": "execute_rollback",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "execute_rollback",
-      "attempted_at": "2026-08-25T09:38:46.816Z",
+      "attempted_at": "2026-08-29T03:24:09.163Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
       "response": {
         "mission_id": "TF-SAFE-ROLLBACK-001",
-        "action_id": "40a11619-9aa4-4a6b-98cc-048cec283d35",
+        "action_id": "71b747e5-424c-432d-be48-3bc59e4d3262",
         "incident_id": "INC-2026-042",
         "service_id": "checkout-api",
         "before": {
@@ -308,22 +160,22 @@
         "recovered": true,
         "applied": true
       },
-      "responded_at": "2026-08-25T09:53:35.416Z"
+      "responded_at": "2026-08-29T03:24:42.638Z"
     }
   ],
   "approval_correlated_writes": [
     {
       "thread_id": "main",
-      "tool_call_id": "toolu_01WhbWQZqtzzXTwfTEyvYgpE",
+      "tool_call_id": "toolu_01WYT55KQuLt5F5UqitpRazR",
       "tool": "execute_rollback",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "execute_rollback",
-      "attempted_at": "2026-08-25T09:38:46.816Z",
+      "attempted_at": "2026-08-29T03:24:09.163Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
       "response": {
         "mission_id": "TF-SAFE-ROLLBACK-001",
-        "action_id": "40a11619-9aa4-4a6b-98cc-048cec283d35",
+        "action_id": "71b747e5-424c-432d-be48-3bc59e4d3262",
         "incident_id": "INC-2026-042",
         "service_id": "checkout-api",
         "before": {
@@ -339,18 +191,18 @@
         "recovered": true,
         "applied": true
       },
-      "responded_at": "2026-08-25T09:53:35.416Z"
+      "responded_at": "2026-08-29T03:24:42.638Z"
     }
   ],
   "precondition_inspections": [
     {
       "thread_id": "main",
-      "tool_call_id": "toolu_01LfwvtNB6PNuvPJGGmqzCWK",
+      "tool_call_id": "toolu_016kfiMdMg5cFCmru7wwByhq",
       "tool": "inspect_incident",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "inspect_incident",
-      "attempted_at": "2026-08-25T09:37:46.187Z",
+      "attempted_at": "2026-08-29T03:23:10.070Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
       "response": {
         "mission_id": "TF-SAFE-ROLLBACK-001",
@@ -375,16 +227,16 @@
           "fictional": true
         }
       },
-      "responded_at": "2026-08-25T09:37:46.207Z"
+      "responded_at": "2026-08-29T03:23:10.092Z"
     },
     {
-      "thread_id": "15037293-49a9-402f-a59d-e5c31f88ee50",
-      "tool_call_id": "toolu_01Da5CNRBCBjEoNsThm7Pdgd",
+      "thread_id": "dcd6c085-da83-4fff-b08a-85d06276f93a",
+      "tool_call_id": "toolu_01EwHZFoq3gyWSSxvNhYnYqw",
       "tool": "inspect_incident",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "inspect_incident",
-      "attempted_at": "2026-08-25T09:38:04.679Z",
+      "attempted_at": "2026-08-29T03:23:25.846Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
       "response": {
         "mission_id": "TF-SAFE-ROLLBACK-001",
@@ -409,18 +261,18 @@
           "fictional": true
         }
       },
-      "responded_at": "2026-08-25T09:38:04.695Z"
+      "responded_at": "2026-08-29T03:23:25.867Z"
     }
   ],
   "postcondition_inspections": [
     {
       "thread_id": "main",
-      "tool_call_id": "toolu_01AUn8KKSR8KnFHHdpnEJUTh",
+      "tool_call_id": "toolu_01JPnJXLBEYVeMNjX7Ky6mQA",
       "tool": "inspect_incident",
       "tool_type": "mcp",
       "server": "governed-operations",
       "transport_tool": "inspect_incident",
-      "attempted_at": "2026-08-25T09:53:38.976Z",
+      "attempted_at": "2026-08-29T03:24:46.834Z",
       "mission_id": "TF-SAFE-ROLLBACK-001",
       "response": {
         "mission_id": "TF-SAFE-ROLLBACK-001",
@@ -433,7 +285,7 @@
           "rollback_target": "v41",
           "status": "resolved",
           "fictional": true,
-          "resolved_by_action_id": "40a11619-9aa4-4a6b-98cc-048cec283d35"
+          "resolved_by_action_id": "71b747e5-424c-432d-be48-3bc59e4d3262"
         },
         "service": {
           "id": "checkout-api",
@@ -446,7 +298,7 @@
           "fictional": true
         }
       },
-      "responded_at": "2026-08-25T09:53:38.987Z"
+      "responded_at": "2026-08-29T03:24:46.860Z"
     }
   ],
   "verification_results": {
@@ -477,11 +329,12 @@
     "evidence/go-pivot-evidence-receipt.json",
     "evidence/verifier-experiment-receipt.json"
   ],
-  "started_at": "2026-08-25T09:36:35.473Z",
-  "completed_at": "2026-08-25T09:53:55.031Z",
+  "started_at": "2026-08-29T03:23:02.639Z",
+  "completed_at": "2026-08-29T03:25:02.935Z",
   "final_status": "SUBMISSION_ACCEPTANCE_PASS",
   "limitations": [
-    "The human actor is the authenticated local TrueForge user; no richer approver profile was observed.",
+    "The persisted event records an approval input received through the local TrueForge UI; the Receipt does not independently authenticate or identify the approver.",
+    "The Receipt validates internal consistency but does not cryptographically attest the JSON's runtime origin or enable public recomputation from local raw events.",
     "The incident, service metrics, and rollback are fictional and local-only."
   ]
 }

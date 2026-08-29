@@ -6,6 +6,7 @@ const assetDirectory = path.dirname(fileURLToPath(import.meta.url));
 const baseUrl = (process.env.DEMO_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '');
 const consoleUrl = `${baseUrl}/evidence_console/`;
 const outputs = {
+  receipt: path.join(assetDirectory, '04-submission-receipt.png'),
   mission: path.join(assetDirectory, '05-authority-ledger.png'),
   challenge: path.join(assetDirectory, '06-challenge-rejected.png'),
   evidence: path.join(assetDirectory, '07-portable-evidence.png'),
@@ -18,6 +19,7 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(consoleUrl, { waitUntil: 'networkidle' });
   await page.locator('#console-root[data-evidence-status="pass"]').waitFor();
+  await page.screenshot({ path: outputs.receipt });
   await page.locator('#workbench').evaluate(element => element.scrollIntoView({ block: 'start' }));
   await page.screenshot({ path: outputs.mission });
 

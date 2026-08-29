@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:12,200
+A service is failing. Every second matters. The agent knows the rollback.
+But capability is not permission. Who says yes, and can every step be proved? This is ArcadeOps.
+
+2
+00:00:12,200 --> 00:00:26,800
+Inside TrueForge, version forty-two is degraded. The mission: investigate, verify, then, only if every gate passes,
+return checkout API to version forty-one. Authority Contract: one write. Nothing broader.
+
+3
+00:00:26,800 --> 00:00:43,100
+The agent inspects MCP state: 18.4% errors. TrueForge creates an independent, read-only Verifier.
+It sees the same incident and plan, but cannot execute it. Two reads. Zero writes. Authority has not moved.
+
+4
+00:00:43,100 --> 00:00:57,300
+Next, a fail-closed validator runs in Daytona. It calls the MCP tools and checks service, versions, threshold,
+and state-bound token. Without the exact SANDBOX_VALIDATION_PASS, the workflow stops.
+
+5
+00:00:57,300 --> 00:01:14,300
+Then, silence. The rollback is ready, but irreversible. TrueForge pauses and shows the action.
+The participant decides: Allow or Deny. Here, Allow was chosen; interface activation was delegated.
+The click is not authority. The decision is.
+
+6
+00:01:14,300 --> 00:01:29,700
+One rollback executes. A fresh inspection finds version forty-one healthy, errors down to 0.7%.
+Replays fail. Concurrent attempts produce one write. Anything out of scope returns Authority Denied.
+
+7
+00:01:29,700 --> 00:01:44,700
+Now, proof. The Evidence Console creates a portable receipt. Twenty-two checks correlate the reads, Verifier,
+Daytona, approval, single write, and recovery. Change one required record, and the claim disappears.
+
+8
+00:01:44,700 --> 00:01:58,099
+ArcadeOps is not blind trust, and not fear of autonomy. It is relief. The agent moves at machine speed.
+The person keeps the decision. And the evidence stays after both have left the room.

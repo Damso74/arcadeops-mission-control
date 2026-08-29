@@ -90,10 +90,16 @@ class EvidenceConsoleTests(unittest.TestCase):
         self.assertIn("validateReceiptReport(candidate)", script)
         self.assertIn("validateAuthorityTrial(trial)", script)
         self.assertIn("renderFailure(error)", script)
+        self.assertIn("Persisted event order is not monotonic", script)
+        self.assertIn("verifierCalls.find(call => call.tool === 'prepare_rollback')", script)
+        self.assertNotIn("time: receipt.started_at", script)
+        self.assertNotIn("0 write capability", script)
         self.assertIn("0 displayed", script)
         self.assertNotIn("innerHTML", script)
         self.assertIn('data-evidence-status="loading"', html)
         self.assertNotIn("SUBMISSION_ACCEPTANCE_PASS", html)
+        self.assertNotIn("sealed Receipt", html)
+        self.assertIn('role="status"', html)
 
     def test_markup_carries_no_hardcoded_receipt_identity_or_metrics(self) -> None:
         html = (ROOT / "evidence_console" / "index.html").read_text(encoding="utf-8")

@@ -212,7 +212,8 @@ def main() -> int:
         "limitations": [
             "Daytona was unavailable, so no sandbox execution was claimed.",
             "Dynamic subagents were disabled; no subagent event was claimed.",
-            "The human actor is represented by the authenticated local TrueForge user; TrueForge 0.1.4 does not expose a richer approver identity in these events.",
+            "The persisted event records an approval input received through the local TrueForge UI; the Receipt does not independently authenticate or identify the approver.",
+            "The Receipt validates internal consistency but does not cryptographically attest the JSON's runtime origin or enable public recomputation from local raw events.",
             "MCP data is fictional and local-only.",
         ],
     }

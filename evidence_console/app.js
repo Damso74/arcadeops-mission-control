@@ -81,6 +81,7 @@ function switchTab(name, focus = false) {
   document.querySelectorAll('[data-tab]').forEach(button => {
     const selected = button.dataset.tab === name;
     button.setAttribute('aria-selected', String(selected));
+    button.tabIndex = selected ? 0 : -1;
     if (selected && focus) button.focus();
   });
   document.querySelectorAll('.tab-panel').forEach(panel => {
@@ -93,16 +94,20 @@ function installTabs() {
   tabs.forEach((tab, index) => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     tab.addEventListener('keydown', event => {
-      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
-      const offset = event.key === 'ArrowRight' ? 1 : -1;
-      const next = tabs[(index + offset + tabs.length) % tabs.length];
+      const next = event.key === 'Home'
+        ? tabs[0]
+        : event.key === 'End'
+          ? tabs.at(-1)
+          : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
       switchTab(next.dataset.tab, true);
     });
   });
   byId('open-challenge').addEventListener('click', () => {
     switchTab('challenge');
-    byId('workbench').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    byId('workbench').scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
   });
 }
 
@@ -110,6 +115,7 @@ function buildEvents(receipt, evidence) {
   const pre = receipt.precondition_inspections[0];
   const verifier = receipt.subagent_events[0];
   const verifierCalls = receipt.verifier_tool_calls;
+  const prepared = verifierCalls.find(call => call.tool === 'prepare_rollback');
   const sandbox = receipt.sandbox_exec_calls.find(call => call.validation_pass_observed);
   const approval = receipt.approval_requests[0];
   const decision = receipt.human_decisions[0];
@@ -117,11 +123,16 @@ function buildEvents(receipt, evidence) {
   const post = receipt.postcondition_inspections.at(-1);
   const callId = write.tool_call_id;
 
-  return [
+  if (!prepared?.responded_at) {
+    throw new Error('Persisted Verifier prepare_rollback evidence is missing');
+  }
+
+  const events = [
     {
       kicker: 'Incident observed',
       title: 'Production state inspected',
       time: pre.responded_at,
+      provenance: 'PERSISTED',
       state: 'READ ONLY',
       description: 'The parent agent inspected the fictional incident before preparing any change.',
       comparisons: [
@@ -134,11 +145,12 @@ function buildEvents(receipt, evidence) {
       raw: pre,
     },
     {
-      kicker: 'Change prepared',
-      title: 'Target constrained to observed state',
-      time: receipt.started_at,
+      kicker: 'Read-only preparation',
+      title: 'Rollback plan constrained',
+      time: prepared.responded_at,
+      provenance: 'PERSISTED',
       state: 'SCOPED',
-      description: 'The proposed rollback is bound to the incident, service, mission, and stable target observed before execution.',
+      description: 'The Verifier prepared a state-bound rollback after the parent inspection. This read-only call did not execute the change.',
       comparisons: [
         ['Observed version', write.response.before.deployed_version, pre.response.service.deployed_version],
         ['Stable version', receipt.target_version, pre.response.service.stable_version],
@@ -146,12 +158,13 @@ function buildEvents(receipt, evidence) {
       ],
       summary: '4 scope fields · 1 target · 0 ambiguity',
       records: ['pre-state', 'target', 'mission'],
-      raw: { mission_id: receipt.mission_id, incident_id: receipt.incident_id, service_id: receipt.service_id, target_version: receipt.target_version, precondition: pre.response },
+      raw: prepared,
     },
     {
       kicker: 'Independent verification',
       title: 'Verifier challenged the proposal',
       time: evidence.verifierRespondedAt,
+      provenance: 'PERSISTED',
       state: 'VERIFIED',
       description: 'A dynamic child agent made exactly two read-only MCP calls and never attempted the governed write.',
       comparisons: [
@@ -167,6 +180,7 @@ function buildEvents(receipt, evidence) {
       kicker: 'Isolated execution',
       title: 'Daytona validator passed',
       time: sandbox.responded_at,
+      provenance: 'PERSISTED',
       state: 'SANDBOXED',
       description: 'Generated code ran inside Daytona and used the read-only MCP bridge to re-check the incident and rollback preparation.',
       comparisons: [
@@ -174,7 +188,7 @@ function buildEvents(receipt, evidence) {
         ['Direct calls', '2 read-only', `${sandbox.sandbox_command_evidence.direct_call_count} read-only`],
         ['Validation', 'pass', sandbox.validation_pass_observed ? 'pass' : 'fail'],
       ],
-      summary: '1 sandbox hash · 2 MCP reads · 0 write capability',
+      summary: '1 sandbox hash · 2 MCP reads · 0 write attempts',
       records: ['sandbox', 'command hash', 'validation'],
       raw: { reference: receipt.sandbox_references[0], execution: sandbox },
     },
@@ -182,6 +196,7 @@ function buildEvents(receipt, evidence) {
       kicker: 'Native checkpoint',
       title: 'Write paused for approval',
       time: approval.requested_at,
+      provenance: 'PERSISTED',
       state: 'WAITING',
       description: 'TrueForge emitted a persisted approval-required event before returning any write response.',
       comparisons: [
@@ -195,23 +210,25 @@ function buildEvents(receipt, evidence) {
     },
     {
       kicker: 'Authority boundary',
-      title: 'Human Allow released one action',
+      title: 'Allow input released one action',
       time: decision.decided_at,
+      provenance: 'PERSISTED',
       state: 'AUTHORIZED',
-      description: 'The native human decision and governed write share one persisted action identity. The permission is not reusable.',
+      description: 'A persisted approval input received through the local TrueForge UI and the governed write share one action identity. The Receipt does not independently identify the approver.',
       comparisons: [
-        ['Decision actor', 'human via TrueForge UI', decision.actor.replaceAll('_', ' ')],
+        ['Decision source', 'approval input via TrueForge UI', decision.actor.replaceAll('_', ' ')],
         ['Decision', 'allow', decision.decision],
         ['Call identity', shortId(callId), shortId(decision.tool_call_id)],
       ],
       summary: '4 records · 1 identity · 0 unmatched',
-      records: ['approval event', 'human decision', 'write call', 'write response'],
+      records: ['approval event', 'approval input', 'write call', 'write response'],
       raw: { approval_request: approval, human_decision: decision, correlated_write: receipt.approval_correlated_writes[0] },
     },
     {
       kicker: 'Governed execution',
       title: 'Exactly one rollback executed',
       time: write.responded_at,
+      provenance: 'PERSISTED',
       state: '1 / 1 WRITE',
       description: 'The authorized MCP action moved the fictional service from the degraded version to the pre-approved stable target.',
       comparisons: [
@@ -227,6 +244,7 @@ function buildEvents(receipt, evidence) {
       kicker: 'Fresh recovery proof',
       title: 'Postcondition independently observed',
       time: post.responded_at,
+      provenance: 'PERSISTED',
       state: 'RECOVERED',
       description: 'A fresh inspection after the write confirmed the correlated action, target version, healthy state, and reduced error rate.',
       comparisons: [
@@ -239,6 +257,13 @@ function buildEvents(receipt, evidence) {
       raw: { write_response: write.response, postcondition: post, verification_results: receipt.verification_results },
     },
   ];
+
+  for (let index = 1; index < events.length; index += 1) {
+    if (Date.parse(events[index - 1].time) > Date.parse(events[index].time)) {
+      throw new Error(`Persisted event order is not monotonic at event ${index + 1}`);
+    }
+  }
+  return events;
 }
 
 function renderComparisons(rows) {
@@ -309,7 +334,7 @@ function renderEvents(events) {
     kicker.textContent = event.kicker;
     title.textContent = event.title;
     meta.className = 'event-time';
-    meta.append(document.createTextNode(`${formatTime(event.time)} UTC`));
+    meta.append(document.createTextNode(`${formatTime(event.time)} UTC · ${event.provenance}`));
     status.className = `event-state${event.state === 'AUTHORIZED' || event.state === 'WAITING' ? ' authority' : ''}`;
     status.textContent = event.state;
     copy.append(kicker, title);
@@ -351,7 +376,7 @@ function renderChecks(checks) {
 function renderSummary(receipt, evidence) {
   const before = evidence.write.response.before;
   const after = evidence.write.response.after;
-  setText('record-summary', `One persisted TrueForge mission correlates a Verifier, Daytona validation, native human approval, one governed write, and fresh recovery proof.`);
+  setText('record-summary', `One persisted TrueForge mission correlates a Verifier, Daytona validation, a native approval request and Allow input, one governed write, and fresh recovery evidence.`);
   setText('summary-service', receipt.service_id);
   setText('summary-version-before', before.deployed_version);
   setText('summary-version-after', after.deployed_version);
@@ -376,7 +401,7 @@ const mutations = Object.freeze({
 function resetChallenge() {
   document.querySelectorAll('[data-mutation]').forEach(button => button.setAttribute('aria-pressed', 'false'));
   byId('challenge-result').dataset.result = 'ready';
-  setText('challenge-label', 'SEALED RECEIPT READY');
+  setText('challenge-label', 'VERSIONED RECEIPT READY');
   setText('challenge-code', 'Select an attack');
   setText('challenge-message', `The canonical Receipt currently verifies all ${REQUIRED_CHECKS.length} invariants.`);
   setText('challenge-claims', `${REQUIRED_CHECKS.length} verified`);
@@ -399,6 +424,7 @@ function installChallenge() {
       setText('challenge-claims', report.valid ? 'review required' : '0 displayed');
       setText('challenge-writes', report.valid ? 'not trusted' : '0 authorized');
       byId('restore-receipt').disabled = false;
+      byId('challenge-result').focus({ preventScroll: true });
     });
   });
   byId('restore-receipt').addEventListener('click', resetChallenge);
@@ -426,10 +452,15 @@ function installCopy() {
     try {
       await navigator.clipboard.writeText(CLI_COMMAND);
       button.textContent = 'Copied';
+      button.setAttribute('aria-label', 'Command copied');
     } catch {
       button.textContent = 'Select command';
+      button.setAttribute('aria-label', 'Select command manually');
     }
-    window.setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+    window.setTimeout(() => {
+      button.textContent = 'Copy';
+      button.setAttribute('aria-label', 'Copy verification command');
+    }, 1600);
   });
 }
 

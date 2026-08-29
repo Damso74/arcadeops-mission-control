@@ -5,7 +5,7 @@ services:
     build:
       context: ./mcp_server
     image: trueforge-safe-rollback-mcp:local
-    container_name: trueforge-safe-rollback-mcp-20260825
+    container_name: ${ARCADEOPS_MCP_CONTAINER_NAME:-trueforge-safe-rollback-mcp-20260825}
     restart: unless-stopped
     environment:
       PORT: "8765"
@@ -27,7 +27,7 @@ services:
 
 volumes:
   safe-rollback-state:
-    name: trueforge-safe-rollback-state
+    name: ${ARCADEOPS_MCP_STATE_VOLUME:-trueforge-safe-rollback-state}
 
 networks:
   trueforge:

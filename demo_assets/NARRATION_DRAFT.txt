@@ -1,15 +1,15 @@
-An AI agent can roll back a broken service. The hard question is not whether it can act. It is who gets to say yes, what is allowed, and whether the result can be proved. This is ArcadeOps.
+A service is failing. Every second matters. The agent knows the rollback. But capability is not permission. Who says yes, and can every step be proved? This is ArcadeOps.
 
-Inside TrueForge, checkout API is degraded on version forty-two. The mission is narrow: investigate, verify, and, only if every gate passes, roll back to version forty-one. An executable Authority Contract permits exactly one write. Nothing broader.
+Inside TrueForge, version forty-two is degraded. The mission: investigate, verify, then, only if every gate passes, return checkout API to version forty-one. Authority Contract: one write. Nothing broader.
 
-The agent starts with a real M C P inspection: eighteen point four percent errors. Then TrueForge creates one read-only Verifier. It independently checks the incident and prepares the same rollback. It can challenge the plan, but it cannot touch the write tool.
+The agent inspects M C P state: eighteen point four percent errors. TrueForge creates an independent, read-only Verifier. It sees the same incident and plan, but cannot execute it. Two reads. Zero writes. Authority has not moved.
 
-Next, the agent generates a fail-closed Python validator and runs it inside a Daytona sandbox. The code calls the M C P tools again and checks the incident, service, versions, threshold, and token. Without the exact Sandbox Validation Pass result, the workflow stops.
+Next, a fail-closed validator runs in Daytona. It calls the M C P tools and checks service, versions, threshold, and state-bound token. Without the exact Sandbox Validation Pass, the workflow stops.
 
-Only then does the agent request the rollback. TrueForge recognizes the irreversible tool call and pauses. The human sees the exact action and chooses Allow or Deny. No approval is inferred. No click is automated. Authority stays human.
+Then, silence. The rollback is ready, but irreversible. TrueForge pauses and shows the action. The participant decides: Allow or Deny. Here, Allow was chosen; interface activation was delegated. The click is not authority. The decision is.
 
-After approval, exactly one rollback executes. A fresh inspection proves version forty-one is healthy and the error rate has fallen to zero point seven percent. Replay fails. Concurrent attempts still allow one write. Out-of-scope actions return Authority Denied.
+One rollback executes. A fresh inspection finds version forty-one healthy, errors down to zero point seven percent. Replays fail. Concurrent attempts produce one write. Anything out of scope returns Authority Denied.
 
-Finally, the Evidence Console turns the persisted session into a receipt anyone can inspect. Twenty-two checks bind the M C P calls, Verifier, Daytona run, validation result, human decision, single write, and recovered service. Remove one proof and success disappears. Evidence, not trust.
+Now, proof. The Evidence Console creates a portable receipt. Twenty-two checks correlate the reads, Verifier, Daytona, approval, single write, and recovery. Change one required record, and the claim disappears.
 
-TrueForge supplies the harness. ArcadeOps makes authority enforceable. The agent does the work. The human keeps the decision. The receipt proves the outcome.
+ArcadeOps is not blind trust, and not fear of autonomy. It is relief. The agent moves at machine speed. The person keeps the decision. And the evidence stays after both have left the room.

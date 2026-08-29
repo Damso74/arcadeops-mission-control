@@ -43,12 +43,13 @@ const imageSources = [
 const images = imageSources.map(src => { const image = new Image(); image.src = src; return image; });
 // Absolute narration boundaries keep the visuals auditable and independent of
 // small metadata differences in the encoded audio duration.
-const sceneStopsSeconds = [0, 12, 25, 43, 62, 81, 96, 110];
+const sceneStopsSeconds = [0, 12.2, 26.8, 43.1, 57.3, 74.3, 89.7, 104.7];
 const copper = '#d88a4c';
 const copperLight = '#f2b87d';
 const ink = '#f6f0e7';
 const muted = '#aaa197';
 const green = '#7fd5a3';
+const danger = '#ff7c74';
 const requestedPreviewRaw = new URLSearchParams(window.location.search).get('preview');
 const requestedPreview = requestedPreviewRaw === null ? Number.NaN : Number(requestedPreviewRaw);
 const previewRatio = Number.isFinite(requestedPreview) && requestedPreview >= 0 && requestedPreview <= 1 ? requestedPreview : null;
@@ -75,6 +76,14 @@ function drawBackground(t) {
   glow.addColorStop(1, 'rgba(216,138,76,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, 1280, 720);
+  const incidentStrength = t < sceneStopsSeconds[1] ? 0.12 + Math.sin(t * 3.1) * 0.035 : 0;
+  if (incidentStrength > 0) {
+    const incidentGlow = ctx.createRadialGradient(1090, 350, 12, 1090, 350, 280);
+    incidentGlow.addColorStop(0, `rgba(255,124,116,${incidentStrength})`);
+    incidentGlow.addColorStop(1, 'rgba(255,124,116,0)');
+    ctx.fillStyle = incidentGlow;
+    ctx.fillRect(760, 40, 520, 620);
+  }
   ctx.strokeStyle = 'rgba(246,240,231,0.035)';
   ctx.lineWidth = 1;
   for (let x = 0; x < 1280; x += 48) {
@@ -189,14 +198,66 @@ function drawScreenshot(image, progress, alpha = 1) {
   ctx.restore();
 }
 
+function drawApprovalScreenshot(image, progress, alpha = 1) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const eased = easeOut(progress);
+  const cardX = 54, cardY = 160 + (1 - eased) * 10, cardW = 1172, cardH = 492;
+  ctx.shadowColor = 'rgba(0,0,0,0.44)'; ctx.shadowBlur = 34; ctx.shadowOffsetY = 18;
+  ctx.fillStyle = '#14120f'; roundedRect(cardX, cardY, cardW, cardH, 18);
+  ctx.shadowColor = 'transparent';
+  ctx.save(); ctx.beginPath(); ctx.roundRect(cardX + 7, cardY + 7, cardW - 14, cardH - 14, 12); ctx.clip();
+  // Preserve real TrueForge chrome and the native approval row. The request
+  // editor between them contains a state-bound token and is intentionally not
+  // drawn into the public video.
+  ctx.drawImage(image, 0, 0, 1280, 70, cardX + 7, cardY + 7, cardW - 14, 64);
+  ctx.fillStyle = '#171512'; ctx.fillRect(cardX + 7, cardY + 71, cardW - 14, cardH - 78);
+  text(['STATE-BOUND REQUEST ARGUMENTS REDACTED'], cardX + 88, cardY + 144, 12, muted, 820);
+  const sourceX = 330, sourceY = 350, sourceW = 700, sourceH = 100;
+  const targetX = cardX + 88, targetY = cardY + 188, targetW = cardW - 176;
+  const targetH = targetW * sourceH / sourceW;
+  ctx.drawImage(image, sourceX, sourceY, sourceW, sourceH, targetX, targetY, targetW, targetH);
+  ctx.strokeStyle = 'rgba(242,184,125,0.56)'; ctx.lineWidth = 2;
+  ctx.strokeRect(targetX - 1, targetY - 1, targetW + 2, targetH + 2);
+  text(['Real native TrueForge checkpoint · participant decision required'], cardX + 88, cardY + 404, 18, ink, 650);
+  text(['The Receipt proves the persisted approval input and ordering; it does not authenticate approver identity.'], cardX + 88, cardY + 439, 14, muted, 540);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(242,184,125,0.42)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 18); ctx.stroke();
+  ctx.restore();
+}
+
 function drawEvidenceScene(index, progress, alpha, titleLines, pill, activeStep) {
   ctx.save(); ctx.globalAlpha *= alpha;
   drawBrandHeader(`0${index - 1} / 05`, 1);
   text(titleLines.slice(0, 1), 66, 132, 30, ink, 680, 1.08, 'Georgia');
   drawPill(pill, 928, 108, index === 6 ? green : copperLight);
-  drawScreenshot(images[index - 2], progress, 1);
+  if (index === 4) drawApprovalScreenshot(images[index - 2], progress, 1);
+  else drawScreenshot(images[index - 2], progress, 1);
   text(['FULL PAGE · LIVE HARNESS EVIDENCE'], 66, 686, 11, muted, 760);
   ctx.restore();
+}
+
+function drawDecisionPulse(progress) {
+  const breath = 0.5 + 0.5 * Math.sin(progress * Math.PI * 5);
+  ctx.save();
+  ctx.strokeStyle = `rgba(242,184,125,${0.12 + breath * 0.18})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(1128, 126, 18 + breath * 8, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = copperLight;
+  ctx.beginPath();
+  ctx.arc(1128, 126, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawRecoveryGlow(progress) {
+  const strength = easeOut(progress);
+  const glow = ctx.createRadialGradient(1060, 250, 20, 1060, 250, 520);
+  glow.addColorStop(0, `rgba(127,213,163,${0.16 * strength})`);
+  glow.addColorStop(1, 'rgba(127,213,163,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(620, 0, 660, 710);
 }
 
 function drawLedgerScene(t) {
@@ -221,13 +282,13 @@ function drawScene(index, progress, alpha) {
   if (index === 0) {
     const enter = easeOut(progress * 2.4);
     drawMark(72, 178 + (1 - enter) * 22, 124, enter);
-    text(['ARCADEOPS'], 238, 232, 22, copperLight, 820);
-    text(['The agent can act.', 'You keep authority.'], 238, 302, 61, ink, 560, 1.02, 'Georgia');
-    text(['One bounded mission. One human decision. One verifiable result.'], 242, 458, 23, '#c2b9ae', 500);
+    text(['GOVERNED LOCAL INCIDENT DEMO'], 238, 232, 18, danger, 820);
+    text(['A service is failing.', 'The agent knows the fix.'], 238, 302, 57, ink, 560, 1.02, 'Georgia');
+    text(['But capability is not permission.'], 242, 451, 25, '#c2b9ae', 520);
     let chipX = 242;
     ['TRUEFORGE', 'MCP', 'VERIFIER', 'DAYTONA', 'HUMAN GATE'].forEach(label => { chipX += drawPill(label, chipX, 510, copperLight, enter) + 10; });
-    ctx.strokeStyle = 'rgba(216,138,76,0.45)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(1080, 340, 110 + Math.sin(progress * Math.PI) * 12, 0, Math.PI * 2); ctx.stroke();
-    drawIcon('shield', 1027, 285, 106, copperLight);
+    ctx.strokeStyle = 'rgba(255,124,116,0.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(1080, 340, 110 + Math.sin(progress * Math.PI * 3) * 12, 0, Math.PI * 2); ctx.stroke();
+    drawIcon('shield', 1027, 285, 106, danger);
   } else if (index === 1) {
     drawBrandHeader('AUTHORITY CONTRACT');
     text(['One mission. One write.', 'Nothing broader.'], 72, 168, 48, ink, 560, 1.06, 'Georgia');
@@ -250,8 +311,10 @@ function drawScene(index, progress, alpha) {
   } else if (index === 3) {
     drawEvidenceScene(index, progress, 1, ['Generated validation', 'runs inside Daytona.'], 'SANDBOX_VALIDATION_PASS', 2);
   } else if (index === 4) {
-    drawEvidenceScene(index, progress, 1, ['TrueForge pauses', 'before the write.'], 'HUMAN APPROVAL REQUIRED', 3);
+    drawEvidenceScene(index, progress, 1, ['TrueForge pauses', 'before the write.'], 'PARTICIPANT DECISION REQUIRED', 3);
+    drawDecisionPulse(progress);
   } else if (index === 5) {
+    drawRecoveryGlow(progress);
     drawEvidenceScene(index, progress, 1, ['Recovery is re-inspected.', 'Scope still wins.'], 'v41 · HEALTHY · 0.7%', 3);
   } else if (index === 6) {
     drawLedgerScene(96 + progress * 14);
@@ -259,11 +322,12 @@ function drawScene(index, progress, alpha) {
     const enter = easeOut(progress * 2.2);
     drawMark(568, 108 + (1 - enter) * 18, 144, enter);
     ctx.textAlign = 'center';
-    text(['Capability for the agent.'], 640, 316, 45, ink, 560, 1.1, 'Georgia');
-    text(['Authority for the human. Proof for everyone.'], 640, 386, 27, '#c2b9ae', 520);
+    text(['Move at machine speed.'], 640, 304, 45, ink, 560, 1.1, 'Georgia');
+    text(['Keep the decision human.'], 640, 365, 31, '#c2b9ae', 520, 1.1, 'Georgia');
+    text(['Leave evidence behind.'], 640, 414, 23, green, 650);
     drawStepRail(4, enter);
     ctx.textAlign = 'center';
-    text(['LET AGENTS ACT · KEEP AUTHORITY HUMAN'], 640, 548, 18, copperLight, 820);
+    text(['ARCADEOPS · AUTHORITY YOU CAN PROVE'], 640, 548, 18, copperLight, 820);
     ctx.textAlign = 'left';
   }
   ctx.restore();
@@ -281,7 +345,9 @@ function draw() {
   const start = sceneStops[sceneIndex];
   const end = sceneStops[sceneIndex + 1];
   const progress = clamp((t - start) / (end - start));
-  const fadeWindow = 2.8;
+  // Evidence screens contain dense text: fast, deliberate cuts keep adjacent
+  // screenshots from ghosting over each other while the narration lands.
+  const fadeWindow = sceneIndex >= 4 ? 1 : 2.2;
   if (sceneIndex < sceneStops.length - 2 && end - t < fadeWindow) {
     const fade = smooth(1 - (end - t) / fadeWindow);
     drawScene(sceneIndex, progress, 1 - fade);
