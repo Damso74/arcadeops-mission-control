@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/4SeSywZ2WL0"><strong>Watch the 118-second demo</strong></a>
+  <a href="https://youtu.be/U9GKftMHWjM"><strong>Watch the 118-second demo</strong></a>
   ·
   <a href="https://damso74.github.io/arcadeops-mission-control/evidence_console/"><strong>Open the Evidence Console</strong></a>
   ·
@@ -35,8 +35,8 @@ can run.
 ## See it work
 
 <p align="center">
-  <a href="https://youtu.be/4SeSywZ2WL0">
-    <img src="https://img.youtube.com/vi/4SeSywZ2WL0/maxresdefault.jpg" width="760" alt="Watch the ArcadeOps demo">
+  <a href="https://youtu.be/U9GKftMHWjM">
+    <img src="https://img.youtube.com/vi/U9GKftMHWjM/maxresdefault.jpg" width="760" alt="Watch the ArcadeOps demo">
   </a>
 </p>
 
