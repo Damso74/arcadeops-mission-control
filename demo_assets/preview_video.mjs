@@ -1,10 +1,14 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const assetDirectory = path.dirname(fileURLToPath(import.meta.url));
 const baseUrl = (process.env.DEMO_BASE_URL || "http://127.0.0.1:4173").replace(/\/$/, "");
-const narration = process.env.DEMO_NARRATION || "narration-final.mp3";
+const narration = process.env.DEMO_NARRATION
+  || (existsSync(path.join(assetDirectory, "narration-final.mp3"))
+    ? "narration-final.mp3"
+    : "narration-final.wav");
 if (path.basename(narration) !== narration) {
   throw new Error("DEMO_NARRATION must name a file inside demo_assets");
 }

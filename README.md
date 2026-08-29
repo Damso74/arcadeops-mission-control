@@ -309,8 +309,9 @@ automated follow-up landed shortly after merge rather than before it.
 | [#7](https://github.com/Damso74/arcadeops-mission-control/pull/7) | Submission evidence, provenance and judge documentation | 2 findings resolved, final review: 0 bugs, 0 violations |
 | [#8](https://github.com/Damso74/arcadeops-mission-control/pull/8) | Authority Ledger and portable evidence verification | 2 correlation and schema-drift findings resolved; final Qodo follow-up on `02ea48e` landed after merge |
 | [#9](https://github.com/Damso74/arcadeops-mission-control/pull/9) | Demo remaster and narration-aligned scenes | Initial review on `cbc0c0a`; corrections on `b36e2b0` and `82db0d4`; final Qodo summary landed nine seconds after merge |
+| [#10](https://github.com/Damso74/arcadeops-mission-control/pull/10) | Final authority evidence, public demo and submission alignment | Initial review on `916f480`: 2 findings resolved; exact-head Qodo follow-up is the merge gate |
 
-All nine merged PRs passed the repository's required automated checks. PR #8
+All nine previously merged PRs passed the repository's required automated checks. PR #8
 and #9 do not establish the strict review-before-merge sequence for their final
 SHAs; the final submission PR is required to close that process gap before merge.
 

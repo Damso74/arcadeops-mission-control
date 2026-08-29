@@ -279,7 +279,7 @@ def resolve_approval_call(
     call: dict[str, Any],
     event: dict[str, Any],
     observed_calls: list[dict[str, Any]],
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """Resolve TrueForge's compact approval reference to its source tool call.
 
     Persisted ``tool.approval_required`` events may carry only ``id`` and
@@ -294,7 +294,7 @@ def resolve_approval_call(
     )
     if resolved:
         return {**resolved, "thread_id": event.get("thread_id") or resolved.get("thread_id")}
-    return effective_call(call, event)
+    return None
 
 
 def is_recovered_postcondition(payload: Any) -> bool:
@@ -395,6 +395,8 @@ def main() -> int:
         elif event.get("type") == "tool.approval_required":
             for call in event.get("tool_calls") or []:
                 approval_call = resolve_approval_call(call, event, calls)
+                if approval_call is None:
+                    continue
                 approvals.append(
                     {
                         "approval_event_id": event.get("id"),

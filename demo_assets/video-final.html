@@ -23,7 +23,7 @@ const audio = document.querySelector('#narration');
 const requestedNarration = new URLSearchParams(window.location.search).get('audio');
 const narrationSource = requestedNarration && /^[a-zA-Z0-9._-]+\.(?:mp3|wav|ogg|m4a)$/.test(requestedNarration)
   ? requestedNarration
-  : 'narration-final.mp3';
+  : 'narration-final.wav';
 audio.src = narrationSource;
 const playbackRate = 1;
 audio.preservesPitch = true;

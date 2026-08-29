@@ -211,8 +211,24 @@ class SubmissionWorkflowTests(unittest.TestCase):
             [],
         )
 
-        self.assertIsNone(resolved["tool"])
-        self.assertIsNone(resolved["server"])
+        self.assertIsNone(resolved)
+
+    def test_unresolved_rich_approval_reference_fails_closed(self) -> None:
+        resolved = resolve_approval_call(
+            {
+                "id": "missing",
+                "source_event_id": "event-1",
+                "tool_info": {"type": "mcp", "server_name": "governed-operations"},
+                "function": {
+                    "name": "execute_rollback",
+                    "arguments": json.dumps({"mission_id": "mission-1"}),
+                },
+            },
+            {"thread_id": "main", "created_at": "2026-08-29T03:24:09Z"},
+            [],
+        )
+
+        self.assertIsNone(resolved)
 
     def test_verifier_model_is_derived_from_persisted_agent(self) -> None:
         self.assertEqual(
