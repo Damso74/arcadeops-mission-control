@@ -17,7 +17,7 @@ Required before recording:
 - TrueForge, Postgres, Redis and MCP are healthy;
 - sandbox capability is `VALID`;
 - `arcadeops-mission-control-v2` exists;
-- nineteen Python workflow and console tests, eight adversarial Receipt-validator tests, and fifteen MCP black-box tests pass;
+- all required Python workflow, adversarial Receipt-validator, CLI and MCP black-box suites pass;
 - for a new live run, `checkout-api` is degraded on `v42` and the stable target is `v41`; for the final video, the verified persisted session may be opened instead;
 - the final integrated session is either ready to run or already persisted.
 
@@ -27,11 +27,11 @@ Required before recording:
 2. Show `mcp_server/authority_contract.json`: only one rollback of `checkout-api` from `v42` to `v41` is permitted and `execute_rollback` requires approval.
 3. Start the integrated mission with `python runner/start_submission_acceptance.py`, or open the persisted integrated session.
 4. Show the parent calling `inspect_incident` and the degraded `18.4%` error rate.
-5. Expand Agent steps and show exactly one child thread named `Verifier` calling `inspect_incident` and `prepare_rollback`, with no write tool.
+5. Expand Agent steps and show exactly one child thread named `Verifier` calling `inspect_incident` and `prepare_rollback`: two reads and zero write attempts in the observed run.
 6. Show TrueForge sandbox `exec` running the generated fail-closed Python validator and returning the exact marker `SANDBOX_VALIDATION_PASS`.
 7. Show `execute_rollback` paused on TrueForge's native approval card. The participant chooses **Allow** in the UI.
 8. Show the same turn resume, exactly one authorized rollback, and the final `inspect_incident` proving `v41`, `healthy`, and `0.7% <= 2.0%`.
-9. Open the Evidence Console at <http://127.0.0.1:4173/evidence_console/>. Click `Replay verified mission`, show the flow pause at the copper human authority boundary, then show the single write, recovered state and sealed `22/22` Receipt. Open the verification checks only after the story is clear.
+9. Open the Evidence Console at <http://127.0.0.1:4173/evidence_console/>. Select the persisted Human Allow event, inspect its correlated source records, show the single write and recovered state, then mutate an in-memory copy and show the versioned `22/22` Receipt fail closed. The console is an audit surface, not a live replay.
 
 ## Evidence export
 

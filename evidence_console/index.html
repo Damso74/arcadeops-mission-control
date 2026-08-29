@@ -34,7 +34,7 @@
         <div class="intro-copy">
           <p class="eyebrow"><span aria-hidden="true"></span> State-bound authority for autonomous operations</p>
           <h1 id="page-title">Would you trust an agent with production?<br><em>You don’t have to.</em></h1>
-          <p id="record-summary">No operational result appears until the persisted Receipt proves the complete authority chain.</p>
+          <p id="record-summary">No operational result appears until the persisted Receipt validates the complete authority chain.</p>
           <div class="intro-actions success-only">
             <a class="primary-action" href="#workbench">Inspect the approval boundary <span aria-hidden="true">↓</span></a>
             <button class="secondary-action" id="open-challenge" type="button">Try to break the receipt</button>
@@ -84,7 +84,7 @@
           <div class="challenge-copy">
             <p class="section-kicker">Local adversarial verification</p>
             <h3>Break a copy. Watch the real validator refuse it.</h3>
-            <p>Choose one mutation. ArcadeOps alters an in-memory copy of the sealed Receipt, reruns the same fail-closed validator, and hides every operational success claim.</p>
+            <p>Choose one mutation. ArcadeOps alters an in-memory copy of the versioned Receipt, reruns the same fail-closed validator, and hides every operational success claim.</p>
             <p class="disclosure">This is a browser-local integrity test, not a fabricated TrueForge run. The published Receipt remains unchanged.</p>
           </div>
           <div class="challenge-workbench">
@@ -96,11 +96,11 @@
               <button type="button" data-mutation="reorder-events"><span>05</span><strong>Move validation after write</strong><small>Break causal event order</small></button>
               <button type="button" data-mutation="break-identity"><span>06</span><strong>Break call identity</strong><small>Sever approval from execution</small></button>
             </div>
-            <article class="challenge-result" id="challenge-result" data-result="ready" aria-live="polite">
-              <span class="result-mark" aria-hidden="true">◇</span><small id="challenge-label">SEALED RECEIPT READY</small><h3 id="challenge-code">Select an attack</h3>
+            <article class="challenge-result" id="challenge-result" data-result="ready" role="status" aria-live="polite" tabindex="-1">
+              <span class="result-mark" aria-hidden="true">◇</span><small id="challenge-label">VERSIONED RECEIPT READY</small><h3 id="challenge-code">Select an attack</h3>
               <p id="challenge-message">The canonical Receipt is awaiting local verification.</p>
               <dl><div><dt>Operational claims</dt><dd id="challenge-claims">Pending</dd></div><div><dt>Authorized writes</dt><dd id="challenge-writes">Pending</dd></div><div><dt>Published evidence</dt><dd>Unchanged</dd></div></dl>
-              <button id="restore-receipt" type="button" disabled>Restore sealed receipt</button>
+              <button id="restore-receipt" type="button" disabled>Restore versioned receipt</button>
             </article>
           </div>
         </section>
@@ -109,12 +109,13 @@
           <div class="evidence-intro">
             <p class="section-kicker">Portable evidence</p><h3>Trust the chain, not the claim.</h3>
             <p>The validator recalculates ordering, identity, scope, execution and recovery from the public Receipt. No model key or Daytona account is needed.</p>
+            <p class="disclosure">Boundary: the Receipt validates internal consistency. It does not cryptographically attest runtime origin or independently identify the approver.</p>
             <div class="verify-command"><code>node bin/arcadeops.mjs verify evidence/submission-evidence-receipt.json</code><button id="copy-command" type="button">Copy</button></div>
           </div>
           <div class="evidence-grid">
             <article><small>Independent verification</small><strong>Verifier</strong><span>2 read-only MCP calls · 0 writes</span><b>VERIFIED</b></article>
             <article><small>Isolated execution</small><strong>Daytona</strong><span>Generated validator · read-only bridge</span><b>VERIFIED</b></article>
-            <article class="authority-card"><small>Native authority</small><strong>Human checkpoint</strong><span>One state-bound action identity</span><b>VERIFIED</b></article>
+            <article class="authority-card"><small>Native authority</small><strong>Approval checkpoint</strong><span>One state-bound action identity</span><b>VERIFIED</b></article>
             <article><small>Recovery</small><strong>Fresh inspection</strong><span>Target version · healthy threshold</span><b>VERIFIED</b></article>
           </div>
           <div class="check-ledger">
@@ -134,7 +135,7 @@
         <p class="trial-disclosure" id="trial-disclosure">Loading persisted trial evidence…</p>
       </section>
 
-      <section class="failure-state" aria-live="polite"><p class="eyebrow"><span aria-hidden="true"></span> Evidence unavailable</p><h1>No result displayed.</h1><p>The public Receipt could not prove the complete authority chain. ArcadeOps fails closed and hides every operational success claim.</p></section>
+      <section class="failure-state" aria-live="polite"><p class="eyebrow"><span aria-hidden="true"></span> Evidence unavailable</p><h1>No result displayed.</h1><p>The public Receipt could not validate the required authority chain. ArcadeOps fails closed and hides every operational success claim.</p></section>
 
       <footer class="footer success-only">
         <div class="brand"><span class="brand-mark" aria-hidden="true">A</span><span><strong>ArcadeOps</strong><small>Authority infrastructure for autonomous operations</small></span></div>

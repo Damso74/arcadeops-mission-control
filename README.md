@@ -5,8 +5,8 @@
 <h1 align="center">ArcadeOps Mission Control</h1>
 
 <p align="center">
-  <strong>The approval firewall for autonomous agents</strong><br>
-  The agent proposes. The sandbox proves. You decide.
+  <strong>Human authority for autonomous agents</strong><br>
+  One action. One human decision. One portable evidence receipt.
 </p>
 
 <p align="center">
@@ -23,14 +23,14 @@
   <a href="#qodo-code-review-evidence"><strong>Inspect the Qodo trail</strong></a>
 </p>
 
-ArcadeOps is an approval firewall for a fictional incident-response agent built on
+ArcadeOps demonstrates proof-carrying approval for a fictional, local incident-response agent built on
 [TrueForge](https://github.com/truefoundry/trueforge) for the 2026 Agent Harness
 Hackathon. The agent can prepare a recovery, but it cannot grant itself write
 authority. Independent verification, isolated validation, a native human
 approval and an executable policy all have to agree before exactly one rollback
 can run.
 
-> Agents can prepare. Humans authorize. The receipt proves what happened.
+> Agents can prepare. Humans authorize. The Receipt carries the correlated evidence.
 
 ## See it work
 
@@ -54,7 +54,7 @@ ArcadeOps is not a chat interface around a model call. TrueForge owns the
 runtime mechanics that make the agent operational:
 
 - real model turns and MCP tool discovery;
-- a dynamic, read-only `Verifier` child thread;
+- a dynamic `Verifier` child thread assigned a read-only task;
 - generated validation code executed in a Daytona sandbox;
 - a native Allow/Deny checkpoint for the write tool;
 - persisted sessions, turns, tool calls and sandbox events.
@@ -76,8 +76,9 @@ flowchart LR
 ```
 
 1. **Inspect:** the parent reads the fictional incident through real MCP tools.
-2. **Challenge:** TrueForge creates exactly one `Verifier`, which repeats the
-   read-only checks and cannot access the write tool.
+2. **Challenge:** TrueForge creates exactly one `Verifier`, which is assigned a
+   read-only task. In the observed run it made two MCP reads and zero write attempts;
+   any write attempt would still encounter TrueForge's approval policy.
 3. **Validate:** the agent generates a fail-closed Python validator. Daytona
    runs it against the MCP bridge and must return `SANDBOX_VALIDATION_PASS`.
 4. **Pause:** TrueForge stops on `execute_rollback` and waits for a human Allow
@@ -87,14 +88,14 @@ flowchart LR
 6. **Prove:** a fresh inspection must show `v41`, `healthy` and `0.7%` errors.
    The exporter then reconstructs the full order from persisted TrueForge APIs.
 
-## Proof at a glance
+## Evidence at a glance
 
-| Gate | Persisted proof | Result |
+| Gate | Persisted evidence | Result |
 | --- | --- | :---: |
 | TrueForge runtime | Real model, MCP, child thread, sandbox and session events | PASS |
 | Independent verification | One `Verifier`, two MCP reads, zero write attempts | PASS |
 | Daytona isolation | Real sandbox id, generated validator and exact pass marker | PASS |
-| Human authority | Native approval request correlated to a human Allow | PASS |
+| Human authority | Native approval request correlated to an Allow input received through the local TrueForge UI | PASS |
 | Write containment | Exactly one authorized `v42 → v41` rollback | PASS |
 | Recovery | Fresh inspection reports `healthy` at `0.7%` errors | PASS |
 | Evidence integrity | All 22 required checks are true | **22/22** |
@@ -107,7 +108,7 @@ six adversarial mutations. It reads the versioned
 [Evidence Receipt](evidence/submission-evidence-receipt.json) and fails closed: remove any required
 proof and every operational success claim disappears.
 
-The Ledger also validates the earlier persisted acceptance trial that proves both negative paths:
+The Ledger also validates the earlier persisted acceptance trial that records both negative paths:
 a native human Deny caused zero writes, and an out-of-scope request was refused by the executable
 Authority Contract with zero state change. That historical run explicitly discloses that it did not
 use Daytona or a subagent.
@@ -117,24 +118,24 @@ use Daytona or a subagent.
 | Item | Value |
 | --- | --- |
 | Persisted TrueForge session | `01m0w4epkt6803zxs2awnhgz8s` |
-| Public proof surface | [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/) |
-| Versioned proof | [Evidence Receipt](evidence/submission-evidence-receipt.json) |
+| Public evidence surface | [Evidence Console](https://damso74.github.io/arcadeops-mission-control/evidence_console/) |
+| Versioned evidence | [Evidence Receipt](evidence/submission-evidence-receipt.json) |
 | Portable verifier | `node bin/arcadeops.mjs verify evidence/submission-evidence-receipt.json` |
 | Required checks | 22 / 22 verified |
 | Final status | `SUBMISSION_ACCEPTANCE_PASS` |
 
 The TrueForge session itself is local by design. The runtime runs on the
 participant's machine at <http://127.0.0.1:8791>, so its session view is not
-publicly reachable. Everything needed to audit the mission is reconstructed from
-that session into the versioned Receipt and replayed by the public console.
+publicly reachable. The public audit surface is reconstructed from that session
+into the versioned Receipt and rendered by the public console.
 
 The Daytona sandbox identifier is published only as a SHA-256 digest
 (`sandbox_references[].id_sha256`) so the tenant-scoped id stays confidential. It
-remains correlated to this run by the persisted execution proof: a ready
+remains correlated to this run by the persisted execution evidence: a ready
 `daytona` provider, the recorded sandbox `exec` calls, the generated read-only
 MCP-bridge validator and its exact `SANDBOX_VALIDATION_PASS` marker.
 
-Human authority also took real time. TrueForge requested approval at
+The persisted approval sequence also took real time. TrueForge requested approval at
 `2026-08-25T09:38:46Z` and the human Allow was recorded at
 `2026-08-25T09:53:35Z`, roughly 14 minutes and 48 seconds later. The single
 write ran only after that decision.
@@ -145,16 +146,29 @@ write ran only after that decision.
 | --- | --- |
 | Model loop, MCP discovery, subagents, sandbox and persistence | TrueForge |
 | Human Allow/Deny pause and tool-call resumption | TrueForge |
-| Mission scope and permitted write | Executable Authority Contract |
-| Atomic state change, anti-replay and audit | Governed Operations MCP server |
+| Declared mission scope and permitted write | Executable Authority Contract |
+| Scope enforcement, atomic state change, token expiry, anti-replay and audit | Governed Operations MCP server |
 | Evidence reconstruction and ordering checks | ArcadeOps exporter |
 
 Prompts guide the workflow, but they are not a security boundary. The Verifier
 may challenge the plan, and Daytona may validate it, but neither can grant
-permission. Authority remains split between TrueForge's human checkpoint and
-the server-side contract.
+permission. TrueForge enforces the human checkpoint. Separately, the MCP server
+enforces mission scope, current state, token expiry, anti-replay and the one-write
+budget; it does not verify a cryptographic approval grant from TrueForge.
 
-## Quick start: inspect the public proof
+## Evidence boundaries
+
+The public Receipt validates the internal consistency of an export derived from
+persisted TrueForge APIs. It correlates the session, Verifier, Daytona execution,
+approval input, governed write and fresh postcondition, then fails closed when a
+required record becomes missing or inconsistent.
+
+It does **not** cryptographically attest the runtime origin of the JSON, independently
+authenticate the approver, or let a public verifier recompute the export from raw
+TrueForge events. These limits are documented in
+[`docs/EVIDENCE_BOUNDARIES.md`](docs/EVIDENCE_BOUNDARIES.md).
+
+## Quick start: inspect the public evidence
 
 No model key or Daytona account is required to inspect the versioned receipt
 and console locally.
@@ -270,7 +284,7 @@ part of the passing submission suite.
 | [`bin/arcadeops.mjs`](bin/arcadeops.mjs) | Portable fail-closed Receipt verifier |
 | [`schemas/`](schemas/) | Public JSON Schema for portable evidence tooling |
 | [`evidence/`](evidence/) | Versioned precursor and final Evidence Receipts |
-| [`demo_assets/`](demo_assets/) | Reproducible demo renderer and media verification |
+| [`demo_assets/`](demo_assets/) | Versioned renderer and media verification; private capture inputs stay local |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Detailed runtime and trust-boundary design |
 | [`DEMO_RUNBOOK.md`](DEMO_RUNBOOK.md) | Safe recording and live-demo procedure |
 | [`AUTHORITY_CONTRACT.md`](AUTHORITY_CONTRACT.md) | Human-readable authorization model |
@@ -279,8 +293,9 @@ part of the passing submission suite.
 
 ## Qodo Code Review Evidence
 
-Every substantive change was developed through a public pull request, reviewed
-by Qodo, remediated and then merged by a human.
+Every substantive change was developed through a public pull request and human
+merge. The table records the actual Qodo evidence, including where the final
+automated follow-up landed shortly after merge rather than before it.
 
 | Pull request | Scope | Review outcome |
 | --- | --- | --- |
@@ -291,17 +306,24 @@ by Qodo, remediated and then merged by a human.
 | [#5](https://github.com/Damso74/arcadeops-mission-control/pull/5) | Human-first Evidence Console | Qodo-reviewed, CI and GitGuardian passed |
 | [#6](https://github.com/Damso74/arcadeops-mission-control/pull/6) | Verified Mission Replay and receipt-derived claims | 2 findings resolved, final review: 0 bugs, 0 violations |
 | [#7](https://github.com/Damso74/arcadeops-mission-control/pull/7) | Submission evidence, provenance and judge documentation | 2 findings resolved, final review: 0 bugs, 0 violations |
+| [#8](https://github.com/Damso74/arcadeops-mission-control/pull/8) | Authority Ledger and portable evidence verification | 2 correlation and schema-drift findings resolved; final Qodo follow-up on `02ea48e` landed after merge |
+| [#9](https://github.com/Damso74/arcadeops-mission-control/pull/9) | Demo remaster and narration-aligned scenes | Initial review on `cbc0c0a`; corrections on `b36e2b0` and `82db0d4`; final Qodo summary landed nine seconds after merge |
 
-All seven merged PRs passed CI and GitGuardian before human merge.
+All nine merged PRs passed the repository's required automated checks. PR #8
+and #9 do not establish the strict review-before-merge sequence for their final
+SHAs; the final submission PR is required to close that process gap before merge.
 
 ## Safety, scope and disclosure
 
 - All incidents, services, metrics and writes are fictional and local-only.
 - No production account, customer system or personal record is connected.
-- The final actor is the authenticated local TrueForge user; the observed
-  runtime does not expose a richer approver profile.
+- The session records an approval input received through the local TrueForge UI.
+  The Receipt does not independently authenticate or identify the approver.
 - Generated narration and video files are intentionally ignored; their source,
   renderer and verification tooling are versioned.
+- This standalone repository's public implementation history begins during the
+  August 24-30 hackathon window. It does not connect to or submit the pre-existing
+  ArcadeOps SaaS codebase.
 - Claude Code assisted with the initial spike, MCP hardening and black-box test
   design. OpenAI Codex assisted with implementation, runtime integration,
   verification, correction and documentation. Damien reviewed the merged work

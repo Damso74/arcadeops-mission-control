@@ -2,14 +2,14 @@ An AI agent can roll back a broken service. The hard question is not whether it 
 
 Inside TrueForge, checkout API is degraded on version forty-two. The mission is narrow: investigate, verify, and, only if every gate passes, roll back to version forty-one. An executable Authority Contract permits exactly one write. Nothing broader.
 
-The agent starts with a real M C P inspection: eighteen point four percent errors. Then TrueForge creates one read-only Verifier. It independently checks the incident and prepares the same rollback. It can challenge the plan, but it cannot touch the write tool.
+The agent starts with a real M C P inspection: eighteen point four percent errors. Then TrueForge creates one Verifier assigned a read-only task. It independently checks the incident and prepares the same rollback. In this run: two reads, zero write attempts.
 
 Next, the agent generates a fail-closed Python validator and runs it inside a Daytona sandbox. The code calls the M C P tools again and checks the incident, service, versions, threshold, and token. Without the exact Sandbox Validation Pass result, the workflow stops.
 
 Only then does the agent request the rollback. TrueForge recognizes the irreversible tool call and pauses. The human sees the exact action and chooses Allow or Deny. No approval is inferred. No click is automated. Authority stays human.
 
-After approval, exactly one rollback executes. A fresh inspection proves version forty-one is healthy and the error rate has fallen to zero point seven percent. Replay fails. Concurrent attempts still allow one write. Out-of-scope actions return Authority Denied.
+After approval, exactly one rollback executes. A fresh inspection shows version forty-one is healthy and the error rate has fallen to zero point seven percent. Replay fails. Concurrent attempts still allow one write. Out-of-scope actions return Authority Denied.
 
-Finally, the Evidence Console turns the persisted session into a receipt anyone can inspect. Twenty-two checks bind the M C P calls, Verifier, Daytona run, validation result, human decision, single write, and recovered service. Remove one proof and success disappears. Evidence, not trust.
+Finally, the Evidence Console turns the persisted session into a receipt anyone can inspect. Twenty-two checks correlate the M C P calls, Verifier, Daytona run, validation result, approval input, single write, and recovered service. Remove one required record and success disappears. Evidence, not trust.
 
-TrueForge supplies the harness. ArcadeOps makes authority enforceable. The agent does the work. The human keeps the decision. The receipt proves the outcome.
+TrueForge supplies the harness. ArcadeOps makes authority enforceable. The agent does the work. The human keeps the decision. The Receipt carries the correlated evidence.

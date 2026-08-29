@@ -10,7 +10,7 @@ The executable contract lives in [`mcp_server/authority_contract.json`](mcp_serv
 - Allowed tools: `inspect_incident`, `prepare_rollback`, `execute_rollback`, `export_evidence`.
 - Write: a single rollback of `checkout-api`, bound to `INC-2026-042`, from `v42` to `v41`.
 - Maximum: exactly zero or one write depending on the human decision, never more.
-- Approval required for: `execute_rollback`.
+- Approval declared for: `execute_rollback`; TrueForge independently enforces the native Allow/Deny pause.
 - Expiry: 31 December 2026 at 23:59:59 UTC.
 
 ## Denied authority
@@ -28,6 +28,11 @@ from the mission, the incident, the service and the current state; a replayed
 token becomes invalid once the state has mutated. After the write, the parent
 must inspect the incident again and prove `v41`, the `healthy` status and an
 error rate at or below the threshold.
+
+The approval declaration is orchestration metadata, not a signed grant consumed
+by the MCP server. TrueForge pauses and resumes the write call; the MCP server
+separately enforces the declared mission scope, state-bound token, expiry,
+anti-replay and one-write budget.
 
 The black-box test proves:
 

@@ -606,7 +606,8 @@ def main() -> int:
         "completed_at": max(timestamps) if timestamps else session.get("updated_at"),
         "final_status": "SUBMISSION_ACCEPTANCE_PASS",
         "limitations": [
-            "The human actor is the authenticated local TrueForge user; no richer approver profile was observed.",
+            "The persisted event records an approval input received through the local TrueForge UI; the Receipt does not independently authenticate or identify the approver.",
+            "The Receipt validates internal consistency but does not cryptographically attest the JSON's runtime origin or enable public recomputation from local raw events.",
             "The incident, service metrics, and rollback are fictional and local-only.",
         ],
     }

@@ -260,7 +260,7 @@ function drawScene(index, progress, alpha) {
     drawMark(568, 108 + (1 - enter) * 18, 144, enter);
     ctx.textAlign = 'center';
     text(['Capability for the agent.'], 640, 316, 45, ink, 560, 1.1, 'Georgia');
-    text(['Authority for the human. Proof for everyone.'], 640, 386, 27, '#c2b9ae', 520);
+    text(['Authority for the human. Evidence for everyone.'], 640, 386, 27, '#c2b9ae', 520);
     drawStepRail(4, enter);
     ctx.textAlign = 'center';
     text(['LET AGENTS ACT · KEEP AUTHORITY HUMAN'], 640, 548, 18, copperLight, 820);
@@ -281,7 +281,9 @@ function draw() {
   const start = sceneStops[sceneIndex];
   const end = sceneStops[sceneIndex + 1];
   const progress = clamp((t - start) / (end - start));
-  const fadeWindow = 2.8;
+  // Keep the final Challenge evidence readable before the closing card. The
+  // previous 2.8-second crossfade began at 107.2s and ghosted closing text over it.
+  const fadeWindow = sceneIndex === 6 ? 1 : 2.8;
   if (sceneIndex < sceneStops.length - 2 && end - t < fadeWindow) {
     const fade = smooth(1 - (end - t) / fadeWindow);
     drawScene(sceneIndex, progress, 1 - fade);

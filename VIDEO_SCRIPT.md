@@ -1,7 +1,7 @@
 # Final demo video script
 
 Target: 1:58 to 2:00. These timings match the verified 118.7-second natural
-narration track used by the reproducible renderer.
+narration track used by the versioned renderer and local capture inputs.
 
 ## 0:00-0:12 - Hook
 
@@ -25,9 +25,9 @@ write. Nothing broader.”
 **Visual:** TrueForge Verifier child and its two persisted MCP calls.
 
 **Narration:** “The agent starts with a real MCP inspection: eighteen point four
-percent errors. Then TrueForge creates one read-only Verifier. It independently
-checks the incident and prepares the same rollback. It can challenge the plan,
-but it cannot touch the write tool.”
+percent errors. Then TrueForge creates one Verifier assigned a read-only task.
+It independently checks the incident and prepares the same rollback. In this
+run: two reads, zero write attempts.”
 
 ## 0:43-1:02 - Daytona
 
@@ -53,7 +53,7 @@ Authority stays human.”
 **Visual:** Governed write, then postcondition `v41`, `healthy`, `0.7%`.
 
 **Narration:** “After approval, exactly one rollback executes. A fresh inspection
-proves version forty-one is healthy and the error rate has fallen to zero point
+shows version forty-one is healthy and the error rate has fallen to zero point
 seven percent. Replay fails. Concurrent attempts still allow one write.
 Out-of-scope actions return Authority Denied.”
 
@@ -69,8 +69,8 @@ receipt anyone can inspect.”
 
 **Visual:** Evidence tab with the CLI and exact 22/22 check groups.
 
-**Narration:** “Twenty-two checks bind the MCP calls, Verifier, Daytona run,
-validation result, human decision, single write, and recovered service.”
+**Narration:** “Twenty-two checks correlate the MCP calls, Verifier, Daytona run,
+validation result, approval input, single write, and recovered service.”
 
 ## 1:47-1:50 - Break it
 
@@ -84,8 +84,8 @@ Show `MODIFIED RECEIPT REJECTED` and `0 displayed`.
 **Visual:** ArcadeOps end card and complete five-step rail.
 
 **Narration:** “TrueForge supplies the harness. ArcadeOps makes authority
-enforceable. The agent does the work. The human keeps the decision. The receipt
-proves the outcome.”
+enforceable. The agent does the work. The human keeps the decision. The Receipt
+carries the correlated evidence.”
 
 ## Recording checks
 

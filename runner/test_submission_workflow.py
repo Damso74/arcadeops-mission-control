@@ -30,6 +30,7 @@ class SubmissionWorkflowTests(unittest.TestCase):
         self.assertEqual(AGENT_NAME, "arcadeops-mission-control-v2")
         self.assertTrue(manifest["config"]["sandbox"]["enabled"])
         self.assertTrue(manifest["config"]["dynamic_sub_agents"]["enabled"])
+        self.assertEqual(manifest["mcp_servers"][0]["enable_tools"], ["@all"])
         self.assertEqual(manifest["mcp_servers"][0]["require_approval_for_tools"], ["execute_rollback"])
         self.assertIn("SANDBOX_VALIDATION_PASS", manifest["instructions"])
         self.assertIn("Verifier must never call execute_rollback", manifest["instructions"])
